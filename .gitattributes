@@ -1,0 +1,5 @@
+# Normaliza finais de linha (evita "arquivos modificados" por causa de CRLF no Windows)
+* text=auto eol=lf
+*.svg text
+*.png binary
+*.jpg binary

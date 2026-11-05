@@ -1,0 +1,36 @@
+/**
+ * Identidade visual do EduTag.
+ * Símbolo: um "check" de presença emitindo ondas de sinal RFID.
+ * (O mesmo desenho existe em assets/img/logo.svg para favicon e documentos.)
+ */
+let uid = 0;
+
+export function logoMark(size = 38) {
+  const id = `etg-${++uid}`;
+  const wrap = document.createElement('span');
+  wrap.style.display = 'inline-flex';
+  wrap.innerHTML = `
+    <svg width="${size}" height="${size}" viewBox="0 0 48 48" role="img" aria-label="EduTag" focusable="false">
+      <defs>
+        <linearGradient id="${id}" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#2447f5"/><stop offset="1" stop-color="#00b8d9"/>
+        </linearGradient>
+      </defs>
+      <rect width="48" height="48" rx="13" fill="url(#${id})"/>
+      <path d="M13 26.5l7 7L34 19" fill="none" stroke="#fff" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M30 10.5a10 10 0 0 1 7.5 7.5" fill="none" stroke="#fff" stroke-opacity=".95" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M30 5.5a15 15 0 0 1 12.5 12.5" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2.6" stroke-linecap="round"/>
+    </svg>`;
+  return wrap;
+}
+
+/** Wordmark "EduTag" (Edu em branco/claro, Tag em ciano). */
+export function wordmark() {
+  const span = document.createElement('span');
+  span.className = 'brand-name';
+  span.append('Edu');
+  const b = document.createElement('b');
+  b.textContent = 'Tag';
+  span.append(b);
+  return span;
+}

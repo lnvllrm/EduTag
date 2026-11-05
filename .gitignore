@@ -1,0 +1,34 @@
+# Dependências e builds
+node_modules/
+vendor/
+dist/
+
+# Segredos e configuração local (nunca versionar credenciais do banco/API)
+.env
+.env.*
+!.env.example
+*.local.php
+backend/config/config.php
+
+# Logs e temporários
+*.log
+*.tmp
+*.bak
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editores
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+
+# Claude Code (configuração local)
+.claude/settings.local.json
+
+# Arduino
+firmware/**/build/

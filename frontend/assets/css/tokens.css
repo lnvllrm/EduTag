@@ -1,0 +1,138 @@
+/* ==========================================================================
+   EduTag — Design tokens
+   Toda cor, espaçamento, raio e sombra do sistema nasce aqui.
+   Para criar um novo tema basta redefinir as variáveis em [data-theme].
+   ========================================================================== */
+
+:root {
+  /* Marca */
+  --brand-gradient: linear-gradient(135deg, #2447f5 0%, #00b8d9 100%);
+  --brand-cyan: #00b8d9;
+
+  /* Tipografia */
+  --font-display: "Sora", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
+
+  /* Escala */
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-md: 0.9375rem;
+  --fs-lg: 1.0625rem;
+  --fs-xl: 1.375rem;
+  --fs-2xl: 1.75rem;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-pill: 999px;
+
+  --sidebar-w: 268px;
+  --topbar-h: 64px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* ---------- Tema claro (padrão) ---------- */
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f3f5fb;
+  --surface: #ffffff;
+  --surface-2: #f7f9fd;
+  --surface-hover: #f1f4fb;
+  --border: #e2e7f1;
+  --border-strong: #cdd5e6;
+
+  --text: #0e1a3a;
+  --text-muted: #55607f;
+  --text-subtle: #6b7694;
+
+  --primary: #2447f5;
+  --primary-hover: #1a37cf;
+  --primary-soft: #e8edff;
+  --primary-contrast: #ffffff;
+
+  --accent: #0097b6;
+  --accent-soft: #dff6fb;
+
+  --success: #0b8a5a;
+  --success-soft: #def6ea;
+  --warning: #a66300;
+  --warning-soft: #fff1d3;
+  --danger: #d02f45;
+  --danger-soft: #fde5e8;
+  --neutral-soft: #eceff6;
+
+  --chart-present: #12a66b;
+  --chart-late: #f2a31b;
+  --chart-absent: #e0485c;
+  --chart-grid: #e6eaf3;
+
+  --sidebar-bg: linear-gradient(180deg, #0b1437 0%, #0a1130 100%);
+  --sidebar-text: #aab5d6;
+  --sidebar-text-strong: #ffffff;
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
+  --sidebar-active: rgba(0, 184, 217, 0.14);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+
+  --shadow-sm: 0 1px 2px rgba(14, 26, 58, 0.05);
+  --shadow-md: 0 4px 16px rgba(14, 26, 58, 0.07);
+  --shadow-lg: 0 18px 48px rgba(14, 26, 58, 0.18);
+  --focus-ring: 0 0 0 3px rgba(36, 71, 245, 0.28);
+  --overlay: rgba(8, 14, 38, 0.55);
+}
+
+/* ---------- Tema escuro (preto, com neutros levemente frios) ---------- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #09090b;
+  --surface: #111114;
+  --surface-2: #17171b;
+  --surface-hover: #1d1d22;
+  --border: #26262c;
+  --border-strong: #38383f;
+
+  --text: #ededf0;
+  --text-muted: #a3a3ad;
+  --text-subtle: #8b8b96;
+
+  --primary: #6483ff;
+  --primary-hover: #7f98ff;
+  --primary-soft: #1a2036;
+  --primary-contrast: #07102e;
+
+  --accent: #2cd3ee;
+  --accent-soft: #0f2429;
+
+  --success: #3ccf93;
+  --success-soft: #0f2a20;
+  --warning: #f5b94a;
+  --warning-soft: #32280f;
+  --danger: #ff6f83;
+  --danger-soft: #3a1a20;
+  --neutral-soft: #202026;
+
+  --chart-present: #3ccf93;
+  --chart-late: #f5b94a;
+  --chart-absent: #ff6f83;
+  --chart-grid: #26262c;
+
+  --sidebar-bg: linear-gradient(180deg, #050506 0%, #09090b 100%);
+  --sidebar-border: rgba(255, 255, 255, 0.07);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.7);
+  --focus-ring: 0 0 0 3px rgba(100, 131, 255, 0.4);
+  --overlay: rgba(0, 0, 0, 0.72);
+}
