@@ -7,6 +7,7 @@ const MAPS = {
     presente: ['success', 'Presente'],
     atrasado: ['warning', 'Atrasado'],
     falta: ['danger', 'Falta'],
+    justificado: ['primary', 'Justificado'],
   },
   situacao: {
     regular: ['success', 'Regular'],
@@ -15,6 +16,7 @@ const MAPS = {
   },
   aula: {
     agendada: ['primary', 'Agendada'],
+    em_andamento: ['warning', 'Em andamento'],
     realizada: ['success', 'Realizada'],
     cancelada: ['danger', 'Cancelada'],
   },

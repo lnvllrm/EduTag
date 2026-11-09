@@ -72,13 +72,14 @@ if (allowed) {
   /* --------------------------- renderização --------------------------- */
   const toneOf = (a) => {
     if (a.status === 'cancelada') return 'cancelada';
-    if (a.status === 'agendada') return 'agendada';
+    if (a.status === 'agendada' || (a.status === 'em_andamento' && !a.presenca)) return 'agendada';
     return isAluno ? (a.presenca?.status ?? '') : 'realizada';
   };
   const toneLabel = (a) => {
     if (a.status === 'cancelada') return 'cancelada';
     if (a.status === 'agendada') return 'agendada';
-    if (isAluno) return a.presenca ? { presente: 'presente', atrasado: 'atrasado', falta: 'falta' }[a.presenca.status] : 'sem registro';
+    if (a.status === 'em_andamento' && !a.presenca) return 'em andamento';
+    if (isAluno) return a.presenca ? (a.presenca.status === 'justificado' ? 'justificada' : a.presenca.status) : 'sem registro';
     return 'realizada';
   };
 
@@ -139,7 +140,7 @@ if (allowed) {
   }
 
   function aulaBlock(a) {
-    const badge = isAluno && a.status === 'realizada' && a.presenca ? statusBadge('presenca', a.presenca.status) : statusBadge('aula', a.status);
+    const badge = isAluno && ['realizada', 'em_andamento'].includes(a.status) && a.presenca ? statusBadge('presenca', a.presenca.status) : statusBadge('aula', a.status);
     const block = h('article', { class: 'day-aula' },
       h('div', { class: 'day-aula__top' },
         h('div', null,
@@ -148,7 +149,7 @@ if (allowed) {
         badge));
 
     if (isAluno) {
-      if (a.status === 'realizada') {
+      if (['realizada', 'em_andamento'].includes(a.status)) {
         block.append(h('p', { class: 'muted', style: 'font-size:var(--fs-sm)' },
           a.presenca?.registradoEm
             ? `Leitura da sua tag às ${fmtTime(a.presenca.registradoEm)}${a.presenca.dispositivo ? ` · ${a.presenca.dispositivo.nome}` : ''}.`
@@ -160,7 +161,7 @@ if (allowed) {
     }
 
     // Professor: resumo + chamada sob demanda
-    if (a.status === 'realizada') {
+    if (['realizada', 'em_andamento'].includes(a.status)) {
       const r = a.resumo;
       const chamada = h('div');
       const btn = h('button', { class: 'btn btn--secondary btn--sm', type: 'button' }, icon('users', { size: 16 }), 'Ver chamada');
@@ -177,7 +178,7 @@ if (allowed) {
                 ? h('ul', { class: 'name-list' }, rows.map((p) => h('li', null, h('a', { href: `aluno.html?id=${p.aluno.id}` }, p.aluno.nome))))
                 : h('p', { class: 'subtle', style: 'font-size:var(--fs-sm)' }, label));
           };
-          mount(chamada, h('div', { class: 'chamada' }, col('falta', 'Ninguém faltou.'), col('atrasado', 'Ninguém atrasou.'), col('presente', 'Ninguém presente.')));
+          mount(chamada, h('div', { class: 'chamada' }, col('falta', 'Ninguém faltou.'), col('atrasado', 'Ninguém atrasou.'), col('presente', 'Ninguém presente.'), ...(r.justificados ? [col('justificado', 'Nenhuma falta justificada.')] : [])));
         } catch (err) {
           mount(chamada, errorState({ message: errorMessage(err) }));
         }
@@ -185,7 +186,7 @@ if (allowed) {
       });
       block.append(
         h('div', { class: 'summary-chips', style: 'padding:0' },
-          chip2('presente', r.presentes), chip2('atrasado', r.atrasados), chip2('falta', r.faltas)),
+          chip2('presente', r.presentes), chip2('atrasado', r.atrasados), chip2('falta', r.faltas), ...(r.justificados ? [chip2('justificado', r.justificados)] : [])),
         h('div', { class: 'row' }, btn, h('a', { class: 'btn btn--ghost btn--sm', href: `presencas.html?aulaId=${a.id}` }, 'Abrir em Presenças')),
         chamada);
     } else if (a.status === 'agendada') {

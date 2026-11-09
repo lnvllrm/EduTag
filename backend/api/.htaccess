@@ -1,0 +1,22 @@
+# Reescreve qualquer caminho (alunos, alunos/12, auth/login...) para o front controller.
+# Requer mod_rewrite (ativo por padrão no XAMPP) e AllowOverride All no diretório.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # O Apache pode descartar o cabeçalho Authorization (usado pelo Arduino); repassa ao PHP.
+    RewriteCond %{HTTP:Authorization} ^(.+)$
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L,QSA]
+</IfModule>
+
+# Esta pasta é a única parte do back-end exposta (o ../.htaccess nega o restante).
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+</IfModule>

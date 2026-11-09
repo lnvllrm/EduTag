@@ -1,0 +1,9 @@
+# Somente backend/api/ deve ser acessível pela web. O restante (src, config, bin) fica fechado.
+# (Quando possível, o ideal em produção é que apenas backend/api seja a raiz pública.)
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

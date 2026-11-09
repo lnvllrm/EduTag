@@ -1,9 +1,9 @@
 /**
  * EduTag — Configuração central do front-end.
  *
- * Para ligar o back-end PHP basta:
- *   1. Definir API_BASE com a raiz dos endpoints (ex.: '/edutag/api/')
- *   2. Mudar USE_MOCK para false
+ * Back-end PHP (padrão): a API fica em backend/api/, ao lado da pasta frontend/
+ * (ex.: http://localhost/EduTag/frontend/login.html → http://localhost/EduTag/backend/api/).
+ * Para demonstrar o front SEM back-end/banco, troque USE_MOCK para true.
  * Nenhuma página ou componente precisa ser alterado.
  */
 export const CONFIG = Object.freeze({
@@ -11,10 +11,10 @@ export const CONFIG = Object.freeze({
   APP_VERSION: '0.1.0',
 
   /** Raiz dos endpoints do back-end PHP (relativa à página ou absoluta). */
-  API_BASE: 'api/',
+  API_BASE: '../backend/api/',
 
   /** true = usa frontend/assets/js/mock/* em vez de chamar o back-end. */
-  USE_MOCK: true,
+  USE_MOCK: false,
 
   /** Latência simulada (ms) do mock, para exercitar estados de carregamento. */
   MOCK_LATENCY_MS: [220, 520],

@@ -4,7 +4,7 @@ import { h } from '../ui/dom.js';
 import { statusBadge } from '../ui/badges.js';
 import { Aulas } from '../api/aulas.js';
 import { fmtDateLong, parseDate, dayOf, monthShort } from '../utils.js';
-import { optTurmas } from '../schemas/options.js';
+import { optTurmas, OPT_STATUS_AULA } from '../schemas/options.js';
 
 const { content, actions, allowed } = await initPage({
   page: 'aulas', title: 'Aulas', subtitle: 'Agenda de aulas por turma, com datas, horários e resumo de presenças.',
@@ -17,7 +17,7 @@ if (allowed) {
     defaultSort: { key: 'data', order: 'desc' },
     filters: [
       { name: 'turmaId', label: 'Turma', allLabel: 'Todas', loadOptions: optTurmas },
-      { name: 'status', label: 'Status', allLabel: 'Todos', options: [{ value: 'agendada', label: 'Agendada' }, { value: 'realizada', label: 'Realizada' }, { value: 'cancelada', label: 'Cancelada' }] },
+      { name: 'status', label: 'Status', allLabel: 'Todos', options: OPT_STATUS_AULA },
       { name: 'de', label: 'De', type: 'date' },
       { name: 'ate', label: 'Até', type: 'date' },
     ],
@@ -42,7 +42,7 @@ if (allowed) {
     fields: [
       { name: 'turmaId', label: 'Turma', type: 'select', required: true, full: true, loadOptions: optTurmas },
       { name: 'data', label: 'Data', type: 'date', required: true },
-      { name: 'status', label: 'Status', type: 'select', required: true, defaultValue: 'agendada', options: [{ value: 'agendada', label: 'Agendada' }, { value: 'realizada', label: 'Realizada' }, { value: 'cancelada', label: 'Cancelada' }] },
+      { name: 'status', label: 'Status', type: 'select', required: true, defaultValue: 'agendada', options: OPT_STATUS_AULA },
       { name: 'inicio', label: 'Início', type: 'time', required: true, defaultValue: '19:00' },
       { name: 'fim', label: 'Término', type: 'time', required: true, defaultValue: '20:40' },
       { name: 'tema', label: 'Tema / conteúdo', full: true, maxlength: 120 },

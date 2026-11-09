@@ -22,4 +22,12 @@ export const OPT_STATUS_PRESENCA = [
   { value: 'presente', label: 'Presente' },
   { value: 'atrasado', label: 'Atrasado' },
   { value: 'falta', label: 'Falta' },
+  { value: 'justificado', label: 'Justificado' },
+];
+
+export const OPT_STATUS_AULA = [
+  { value: 'agendada', label: 'Agendada' },
+  { value: 'em_andamento', label: 'Em andamento' },
+  { value: 'realizada', label: 'Realizada' },
+  { value: 'cancelada', label: 'Cancelada' },
 ];

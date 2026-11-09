@@ -1,12 +1,13 @@
 # EduTag — Contrato da API (front-end ⇄ PHP)
 
-Este documento descreve o que o front-end **já espera** do back-end. O arquivo
-`frontend/assets/js/mock/server.js` implementa exatamente este contrato em memória; o
-back-end PHP precisa apenas respondê-lo igual.
+Contrato entre o front-end e o back-end PHP (`backend/`). Está **implementado** em
+`backend/src/` e verificado por `backend/tests/smoke.php`. O mock
+(`frontend/assets/js/mock/server.js`) segue o mesmo contrato e continua disponível para
+demonstrar o front sem banco (`USE_MOCK: true` em `config.js`).
 
 ## Convenções
 
-- Base: `CONFIG.API_BASE` (`frontend/assets/js/config.js`). Ex.: `/edutag/api/`.
+- Base: `CONFIG.API_BASE` (`frontend/assets/js/config.js`) = `../backend/api/` → `http://localhost/EduTag/backend/api/`.
 - Formato: JSON UTF-8. Datas `YYYY-MM-DD`, data/hora `YYYY-MM-DDTHH:MM:SS` (horário local do servidor), horas `HH:MM`.
 - Autenticação: **sessão PHP por cookie** (`credentials: same-origin`). Sem sessão → `401`.
 - Perfis: `professor` (visão total do sistema, inclusive cadastros) e `aluno` (somente os próprios dados). `auth/me` devolve `perfil` e, para aluno, `alunoId`.
@@ -14,7 +15,9 @@ back-end PHP precisa apenas respondê-lo igual.
   - `presencas`, `aulas`, `turmas`, `alunos/{id}` e `alunos/{id}/frequencia` retornam **apenas** o que pertence a ele (ignorar `alunoId` enviado na query; `403` se pedir outro aluno);
   - `aulas` devolve `presenca: { status, registradoEm, dispositivo } | null` (a dele) **no lugar de** `resumo` (a chamada da turma);
   - todo o restante (cadastros, `dashboard`, `relatorios`, `dispositivos`, `leituras`, `turmas/{id}/alunos`) → `403`.
-- Roteamento: caminhos REST (`alunos/12`). Em Apache/XAMPP use `.htaccess` com `mod_rewrite` apontando para um `api/index.php` (front controller). *(Decisão a confirmar no início do back-end.)*
+- Roteamento: caminhos REST (`alunos/12`), via `backend/api/.htaccess` (`mod_rewrite`) → `index.php`. Sem Apache: `php -S localhost:8080 backend/dev-router.php`.
+- Sessão: cookie `edutag_sid` (HttpOnly, SameSite=Lax). Requisições que alteram dados com cabeçalho `Origin` de outra origem recebem `403 forbidden_origin` (CSRF). Corpo sempre `application/json`.
+- Perfil: `administrador` e `professor` (banco) chegam como `perfil: "professor"`. O login (`email`) também aceita a matrícula (RA).
 
 ### Sucesso
 ```json
@@ -27,11 +30,12 @@ back-end PHP precisa apenas respondê-lo igual.
 ```
 | HTTP | Uso |
 |---|---|
-| 401 | Sem sessão / credenciais inválidas (`code`: `unauthenticated`, `invalid_credentials`) |
+| 401 | Sem sessão / credenciais inválidas (`unauthenticated`, `invalid_credentials`, `invalid_device_token`) |
 | 403 | Sem permissão |
 | 404 | Registro inexistente |
 | 409 | Conflito de integridade (ex.: excluir turma com aulas) — `message` é exibida ao usuário |
 | 422 | Validação — `fields` é exibido junto de cada campo do formulário |
+| 429 | Muitas tentativas de login (5 falhas em 10 min por usuário + IP) |
 
 ### Listagens — parâmetros comuns
 `page`, `perPage` (máx. 100), `q` (busca textual), `sort` (campo, aceita aninhado como `disciplina.nome`), `order` (`asc|desc`) + filtros específicos.
@@ -41,8 +45,9 @@ back-end PHP precisa apenas respondê-lo igual.
 | Método | Caminho | Descrição | Filtros / corpo |
 |---|---|---|---|
 | POST | `auth/login` | `{ email, senha }` → `{ usuario }` | — |
-| GET | `auth/me` | Usuário da sessão `{ id, nome, email, perfil: "professor" ou "aluno", alunoId? }` | — |
+| GET | `auth/me` | Usuário da sessão `{ id, nome, email, matricula, tipo, perfil: "professor" ou "aluno", alunoId?, senhaProvisoria }` | — |
 | POST | `auth/logout` | Encerra a sessão | — |
+| PUT | `auth/senha` | Troca a própria senha `{ senhaAtual, novaSenha }` (mín. 8) | Ainda sem tela no front |
 | GET/POST | `alunos` | Lista / cadastra | `status`, `tag` (`com`\|`sem`), `turmaId`. Corpo: `nome, matricula, email, curso, status, tagUid` |
 | GET/PUT/DELETE | `alunos/{id}` | Consulta / edita / exclui | — |
 | GET | `alunos/{id}/frequencia` | `{ geral, porTurma[], historico[] }` | — |
@@ -56,18 +61,42 @@ back-end PHP precisa apenas respondê-lo igual.
 | GET/POST | `aulas` | Lista (com `turma`, `disciplina`, `resumo`) / cadastra | `turmaId`, `status`, `de`, `ate`. Corpo: `turmaId, data, inicio, fim, tema, status` |
 | PUT/DELETE | `aulas/{id}` | Edita / exclui | — |
 | GET | `presencas` | Lista **somente leitura** + `meta.resumo` | `alunoId`, `turmaId`, `disciplinaId`, `aulaId`, `status`, `de`, `ate`, `q` |
-| GET | `dispositivos` | Dispositivos com `status`, `ultimaComunicacao`, `leiturasHoje` | **Integração futura** |
-| GET | `leituras` | Log bruto de leituras | `dispositivoId`, `limit`. **Integração futura** |
+| GET | `dispositivos` | Dispositivos com `status`, `ultimaComunicacao`, `leiturasHoje` | Cadastro: `bin/dispositivo.php` |
+| GET | `leituras` | Log bruto de leituras | `dispositivoId`, `limit` |
+| POST | `rfid/leitura` | **Arduino**: `{ uid }` (token do dispositivo, ver abaixo) | — |
+| POST | `rfid/heartbeat` | **Arduino**: `{ firmware? }` avisa que está online | — |
 | GET | `relatorios/frequencia` | Linhas por aluno×turma + `meta.{resumo,porTurma}` | `turmaId`, `disciplinaId`, `de`, `ate` |
 | GET | `dashboard` | **Professor**: `kpis, presencaPorDia, frequenciaTurmas, alunosAtencao, proximasAulas, ultimaAula (chamada: ausentes/atrasados), leiturasRecentes`. O painel do aluno é montado no front com `alunos/{id}/frequencia` + `aulas` | — |
 
 Os formatos exatos de cada resposta podem ser vistos em `frontend/assets/js/mock/server.js` (funções `*View`).
 
-### Regras que o **back-end** deve implementar (o front só exibe)
-- Unicidade de matrícula, e-mail, UID de tag e códigos; integridade referencial (409).
-- `situacao` da frequência (`regular|atencao|risco`) e percentual: o mock usa ≥85% regular, ≥75% atenção, <75% risco — **confirmar a regra institucional**.
-- Presença conta como comparecimento quando `presente` ou `atrasado`; janela de tolerância de atraso, leitura duplicada, leitura fora do horário.
-- Autorização por perfil e por turma do professor.
+### Regras implementadas no back-end
+- Unicidade de matrícula (`ra`), e-mail, UID de tag e códigos (`422` por campo); integridade referencial (`409`). Excluir aluno com registros, aula com presenças reais, disciplina com turmas ou turma com aulas retorna `409`.
+- Frequência: comparecimento = `presente` + `atrasado`; `justificado` não entra no denominador. Situação: ≥ 85% `regular`, ≥ 75% `atencao`, abaixo `risco` (**confirmar a regra institucional**; configurável em `config.php`). Os objetos de frequência incluem `justificadas`; os resumos de chamada, `justificados`.
+- Status novos além do mock: aula `em_andamento`; presença `justificado`.
+- Finalizar uma aula (`realizada`) lança `falta` (origem `sistema`) para os matriculados sem leitura; reabrir desfaz.
+- Autorização por perfil. O professor enxerga todas as turmas (visão total); restringir por turma do professor é uma decisão futura.
 
-## Integração RFID (futuro)
-Fora do escopo do front. O Arduino deverá enviar o UID a um endpoint exclusivo (ex.: `POST rfid/leitura`, autenticado por token do dispositivo, **não** por sessão de usuário), que grava em `leituras_rfid`, resolve aluno/aula e gera a `presenca`. O front só consome `dispositivos`, `leituras` e `presencas`. Para "ao vivo", a tela de Dispositivos já possui *polling* opcional (`CONFIG.POLLING_MS`); WebSocket/SSE pode substituí-lo depois.
+## Integração RFID (Arduino)
+Autenticação **por token do dispositivo**, não por sessão: `Authorization: Bearer <token>`. O token é gerado por `php backend/bin/dispositivo.php` e só o hash SHA-256 fica no banco.
+
+```http
+POST /EduTag/backend/api/rfid/leitura
+Authorization: Bearer 3f9a…(48 hex)
+Content-Type: application/json
+
+{ "uid": "A1:B2:C3:D4" }        // aceita : - e espaços; guardado como A1B2C3D4
+```
+```json
+{ "data": { "resultado": "registrada", "mensagem": "Presença registrada.", "aluno": { "id": 6, "nome": "Ana Beatriz Souza" }, "status": "presente" } }
+```
+HTTP `200` sempre que a leitura foi processada; `data.resultado` é um de:
+
+| resultado | Significado |
+|---|---|
+| `registrada` | Presença gravada (`status` = `presente` ou `atrasado`) |
+| `duplicada` | O aluno já tem registro nessa aula |
+| `fora_de_horario` | Tag válida, mas sem aula de hoje na janela [início − 15 min, fim] |
+| `tag_desconhecida` | Tag não vinculada a um aluno ativo |
+
+`401 invalid_device_token` (token ausente/inválido) e `422` (UID malformado) indicam erro do equipamento. Toda leitura é gravada em `leitura_rfid`. `POST rfid/heartbeat` (`{ "firmware": "1.2.0" }`) mantém o leitor "online" quando não há leituras. A tela de Dispositivos lê `dispositivos` e `leituras`; o *polling* opcional (`CONFIG.POLLING_MS`) pode ser trocado por WebSocket/SSE depois.

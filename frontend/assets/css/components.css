@@ -513,6 +513,7 @@ th[aria-sort="ascending"] .icon { transform: rotate(180deg); }
 .cal-ev--presente { background: var(--success-soft); color: var(--success); border-left-color: var(--success); }
 .cal-ev--atrasado { background: var(--warning-soft); color: var(--warning); border-left-color: var(--warning); }
 .cal-ev--falta { background: var(--danger-soft); color: var(--danger); border-left-color: var(--danger); }
+.cal-ev--justificado { background: var(--primary-soft); color: var(--primary); border-left-color: var(--primary); }
 .cal-ev--agendada { background: var(--primary-soft); color: var(--primary); border-left-color: var(--primary); }
 .cal-ev--realizada { background: var(--success-soft); color: var(--success); border-left-color: var(--success); }
 .cal-ev--cancelada { text-decoration: line-through; opacity: 0.75; }
@@ -526,7 +527,7 @@ th[aria-sort="ascending"] .icon { transform: rotate(180deg); }
 .day-aula { padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--r-md); display: flex; flex-direction: column; gap: 10px; }
 .day-aula + .day-aula { margin-top: 12px; }
 .day-aula__top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
-.chamada { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+.chamada { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-4); }
 .chamada h4 { font-size: var(--fs-sm); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
 .chamada .name-list li::before { color: var(--text-subtle); }
 
@@ -537,7 +538,7 @@ th[aria-sort="ascending"] .icon { transform: rotate(180deg); }
   .cal-ev--presente, .cal-ev--realizada { background: var(--success); }
   .cal-ev--atrasado { background: var(--warning); }
   .cal-ev--falta { background: var(--danger); }
-  .cal-ev--agendada { background: var(--primary); }
+  .cal-ev--agendada, .cal-ev--justificado { background: var(--primary); }
   .cal__events { flex-direction: row; flex-wrap: wrap; justify-content: center; }
   .cal__more { display: none; }
   .cal__head div { padding: 8px 2px; font-size: 0.625rem; }

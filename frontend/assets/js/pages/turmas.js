@@ -24,7 +24,8 @@ if (allowed) {
     canCreate: isProf, canEdit: isProf, canDelete: isProf,
     search: 'Código, disciplina, professor ou sala',
     defaultSort: { key: 'codigo', order: 'asc' },
-    filters: [{ name: 'disciplinaId', label: 'Disciplina', allLabel: 'Todas', loadOptions: optDisciplinas }],
+    // A lista de disciplinas é restrita ao professor (o aluno recebe 403); então só ele tem esse filtro.
+    filters: isProf ? [{ name: 'disciplinaId', label: 'Disciplina', allLabel: 'Todas', loadOptions: optDisciplinas }] : [],
     columns: [
       {
         key: 'codigo', label: 'Turma', sortable: true,

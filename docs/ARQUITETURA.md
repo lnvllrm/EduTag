@@ -1,4 +1,4 @@
-# EduTag — Arquitetura do front-end
+# EduTag — Arquitetura
 
 ## Perfis
 | Perfil | Acesso |
@@ -6,7 +6,7 @@
 | **Professor** | Visão total: dashboard com métricas (quem veio e quem faltou), alunos, turmas, disciplinas, aulas, calendário (com chamada por aula), presenças de todos os alunos, relatórios e dispositivos |
 | **Aluno** | Somente os próprios dados: painel pessoal, calendário de aulas com a própria presença/falta, minhas presenças, minha frequência e minhas turmas |
 
-O menu (`layout/nav.js`) muda por perfil e as telas adaptam colunas, filtros e textos. O isolamento real dos dados é do back-end (`403` / filtro por aluno); o mock em `mock/server.js` já o aplica como especificação executável.
+O menu (`layout/nav.js`) muda por perfil e as telas adaptam colunas, filtros e textos. O isolamento real dos dados é do back-end (`403` / filtro por aluno) — implementado em `backend/src/` e coberto por `backend/tests/smoke.php`; o mock em `mock/server.js` o espelha para demonstrar o front sem banco.
 
 ## Princípios
 1. **Separação**: HTML (estrutura mínima) · CSS (tokens → base → layout → componentes → páginas) · JS (módulos ES).
@@ -32,30 +32,33 @@ EduTag/
 │           ├── ui/              dom, icons, brand, toast, modal, form, table, states, badges, charts, crud-page
 │           ├── schemas/         definições de campos/opções compartilhadas
 │           └── pages/           um módulo por tela
+├── backend/                      API em PHP 8.1+ (ver backend/README.md)
+│   ├── api/        index.php + .htaccess (única pasta exposta)
+│   ├── src/        Core · Controllers · Services
+│   ├── config/ · bin/ · tests/
+├── database/                     schema.sql (MySQL/MariaDB)
 ├── docs/                         arquitetura, contrato da API, modelo de dados
-├── backend/   (futuro)           API em PHP
-├── database/  (futuro)           scripts SQL (MySQL)
 └── firmware/  (futuro)           código Arduino + leitor RFID
 ```
 
 ## Como uma tela é montada
 `pagina.html` carrega o CSS e um `<script type="module">` → `pages/x.js` chama `initPage()` (checa sessão e perfil, desenha a casca) e preenche a área de conteúdo usando os recursos de `api/`. Telas de listagem usam `ui/crud-page.js` (busca, filtros, ordenação, paginação, modal de cadastro/edição, confirmação de exclusão, estados de carregamento/vazio/erro, toasts).
 
-## Migração para o back-end real
-1. Em `config.js`: `API_BASE` = raiz dos endpoints PHP e `USE_MOCK: false`.
-2. Implementar os endpoints de `docs/API.md` (o mock é a especificação executável).
-3. (Opcional) apagar `frontend/assets/js/mock/`.
-4. Quando as páginas virarem `.php`, `layout/shell.js` pode ser substituído por `header.php`/`footer.php`; CSS e módulos de página permanecem.
+## Back-end e camadas
+`App` (rotas, CORS, origem, erros) → `Router` (perfil exigido por rota) → `Controllers` (HTTP, validação via `Validator`, SQL com PDO) → `Services` (regras reutilizáveis: frequência, ciclo da aula, leitura RFID). O banco usa o vocabulário da equipe (`ausente`, `finalizada`); a API usa o do front (`falta`, `realizada`) e a tradução fica só em `Core/Fmt.php`. Detalhes e segurança em [backend/README.md](../backend/README.md).
 
-## O que depende de integração futura (sinalizado na interface com selo/aviso)
-| Funcionalidade | Onde | Depende de |
-|---|---|---|
-| Status e última comunicação dos leitores | Dispositivos, Dashboard | Arduino → back-end |
-| Leituras recentes | Dispositivos, Dashboard | Arduino → back-end |
-| Registro automático de presenças | Presenças | Arduino → back-end |
-| Botão "Ler do leitor" ao vincular tag | Formulário de aluno | Leitor RFID |
-| Autenticação real, autorização por perfil | Login, todas | PHP (sessão) |
-| Exportação em PDF | Relatórios | PHP (hoje: CSV e impressão no navegador) |
+## Alternar entre back-end real e mock
+Em `frontend/assets/js/config.js`: `USE_MOCK: false` + `API_BASE: ../backend/api/` (padrão) usam o PHP; `USE_MOCK: true` usa os dados simulados. Nenhuma página muda. Quando as páginas virarem `.php`, `layout/shell.js` pode ser substituído por `header.php`/`footer.php`.
+
+## O que ainda depende do hardware / de decisões
+| Item | Situação |
+|---|---|
+| Firmware do Arduino enviando `POST rfid/leitura` | **Pendente** — endpoint, token por leitor e regras prontos e testados |
+| Botão "Ler do leitor" ao vincular tag | **Pendente** — precisa de um canal leitor → navegador (hoje o UID é digitado/colado) |
+| Status e "ao vivo" dos leitores | Funciona por *polling*; depende do firmware chamar `rfid/heartbeat` |
+| Limiares de frequência (85% / 75%) e tratamento de falta justificada | **Confirmar** com a coordenação (`config.php`) |
+| Troca de senha pelo usuário | API pronta (`PUT auth/senha`); falta a tela |
+| Exportação em PDF | Hoje: CSV e impressão do navegador |
 
 ## Acessibilidade e responsividade
 Navegação por teclado e foco visível, `<dialog>` nativo nos modais, `aria-live` nos toasts, link "Ir para o conteúdo", tabelas viram cartões em telas pequenas, menu lateral vira gaveta abaixo de 1024px, tema claro/escuro (com respeito a `prefers-color-scheme`) e `prefers-reduced-motion`.
