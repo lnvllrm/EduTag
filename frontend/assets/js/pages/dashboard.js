@@ -33,7 +33,7 @@ async function load() {
       Alunos.frequencia(user.alunoId),
       Aulas.listar({ de: todayISO(), status: 'agendada', sort: 'data', order: 'asc', perPage: 5 }),
     ])));
-    else renderProfessor(await Dashboard.resumo());
+    else renderProfessor(await Dashboard.resumo(), user.perfil === 'administrador');
   } catch (err) {
     mount(content, h('div', { class: 'card' }, errorState({ message: errorMessage(err), onRetry: load })));
   }
@@ -70,8 +70,8 @@ function renderAluno({ geral, porTurma, historico }, { data: proximas }) {
   mount(content,
     alerta,
     h('div', { class: 'grid grid--kpi' },
-      kpi('check-circle', geral.situacao === 'risco' ? 'amber' : 'green', 'Minha frequência', fmtPct(geral.pct), 'Presenças + atrasos'),
-      kpi('users', 'primary', 'Presenças', fmtInt(geral.presencas + geral.atrasos), `${fmtInt(geral.atrasos)} com atraso`),
+      kpi('check-circle', geral.situacao === 'risco' ? 'amber' : 'green', 'Minha frequência', fmtPct(geral.pct), 'Presenças em relação às aulas'),
+      kpi('users', 'primary', 'Presenças', fmtInt(geral.presencas), `em ${fmtInt(geral.aulas)} aulas registradas`),
       kpi('alert', faltas ? 'amber' : 'green', 'Faltas', fmtInt(faltas), `em ${fmtInt(geral.aulas)} aulas registradas`),
       kpi('calendar', 'cyan', 'Próxima aula', proxima ? `${String(dayOf(proxima.data)).padStart(2, '0')}/${String(parseDate(proxima.data).getMonth() + 1).padStart(2, '0')}` : '—',
         proxima ? `${proxima.disciplina?.nome} · ${proxima.inicio}` : 'Nenhuma agendada')),
@@ -105,21 +105,21 @@ function nameList(people, emptyText) {
     : h('p', { class: 'subtle', style: 'font-size:var(--fs-sm)' }, emptyText);
 }
 
-function renderProfessor(d) {
+function renderProfessor(d, isAdmin) {
   const { kpis } = d;
 
   const kpiRow = h('div', { class: 'grid grid--kpi' },
-    kpi('users', 'primary', 'Alunos ativos', fmtInt(kpis.alunosAtivos), 'Cadastrados no sistema'),
+    kpi('users', 'primary', 'Alunos ativos', fmtInt(kpis.alunosAtivos), isAdmin ? 'Cadastrados no sistema' : 'Nas suas turmas'),
     kpi('calendar', 'cyan', 'Aulas hoje', fmtInt(kpis.aulasHoje), `${fmtInt(kpis.turmas)} turmas no período`),
-    kpi('check-circle', 'green', 'Presença média', fmtPct(kpis.presencaMediaPct), 'Presenças + atrasos'),
-    kpi('radio', kpis.dispositivosOnline === kpis.dispositivosTotal ? 'green' : 'amber', 'Leitores online', `${kpis.dispositivosOnline}/${kpis.dispositivosTotal}`, 'Aguardando integração'));
+    kpi('check-circle', 'green', 'Presença média', fmtPct(kpis.presencaMediaPct), 'Comparecimento geral'),
+    isAdmin ? kpi('radio', kpis.dispositivosOnline === kpis.dispositivosTotal ? 'green' : 'amber', 'Leitores online', `${kpis.dispositivosOnline}/${kpis.dispositivosTotal}`, 'Aguardando integração') : null);
 
   const chart = card('Presenças por aula', 'Últimos dias com aula realizada',
     d.presencaPorDia.length
       ? h('div', { class: 'stack', style: 'gap:12px' },
         stackedColumns({
           items: d.presencaPorDia.map((p) => ({ label: `${String(dayOf(p.data)).padStart(2, '0')}/${String(parseDate(p.data).getMonth() + 1).padStart(2, '0')}`, values: p })),
-          ariaLabel: 'Presenças, atrasos e faltas nos últimos dias com aula',
+          ariaLabel: 'Presenças e faltas nos últimos dias com aula',
         }),
         legend())
       : emptyState({ iconName: 'chart', title: 'Sem aulas realizadas', text: 'Os gráficos aparecerão quando houver registros de presença.' }),
@@ -139,10 +139,8 @@ function renderProfessor(d) {
       ? h('div', { class: 'stack', style: 'gap:16px' },
         h('div', { class: 'summary-chips', style: 'padding:0' },
           h('span', { class: 'summary-chip' }, statusBadge('presenca', 'presente'), h('b', null, fmtInt(ua.aula.resumo.presentes))),
-          h('span', { class: 'summary-chip' }, statusBadge('presenca', 'atrasado'), h('b', null, fmtInt(ua.aula.resumo.atrasados))),
           h('span', { class: 'summary-chip' }, statusBadge('presenca', 'falta'), h('b', null, fmtInt(ua.aula.resumo.faltas)))),
         h('div', null, h('div', { class: 'list-item__meta', style: 'margin-bottom:6px' }, 'Não vieram'), nameList(ua.ausentes, 'Nenhuma falta nesta aula.')),
-        ua.atrasados.length ? h('div', null, h('div', { class: 'list-item__meta', style: 'margin-bottom:6px' }, 'Chegaram atrasados'), nameList(ua.atrasados, '')) : null,
         h('a', { class: 'btn btn--secondary btn--sm', href: `presencas.html?aulaId=${ua.aula.id}`, style: 'align-self:flex-start' }, 'Ver chamada completa', icon('chevron-right', { size: 16 })))
       : emptyState({ iconName: 'check-circle', title: 'Nenhuma aula realizada' }),
     { flush: false });
@@ -171,5 +169,5 @@ function renderProfessor(d) {
     kpiRow,
     h('div', { class: 'grid grid--main-side', style: 'align-items:start' }, chart, turmas),
     h('div', { class: 'grid grid--3', style: 'align-items:start' }, ultima, atencao, proximas),
-    leituras);
+    isAdmin ? leituras : null);
 }

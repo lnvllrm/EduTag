@@ -13,7 +13,6 @@ function s(tag, attrs = {}, ...children) {
 
 export const SERIES_PRESENCA = [
   { key: 'presentes', label: 'Presentes', color: 'var(--chart-present)' },
-  { key: 'atrasados', label: 'Atrasos', color: 'var(--chart-late)' },
   { key: 'faltas', label: 'Faltas', color: 'var(--chart-absent)' },
 ];
 

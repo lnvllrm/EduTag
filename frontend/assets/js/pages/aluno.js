@@ -26,8 +26,9 @@ const { user, content, actions, allowed } = await initPage({
 if (allowed) {
   // Aluno sempre vê a própria ficha (o back-end também recusa qualquer outro id); professor escolhe pelo parâmetro.
   const id = isAluno(user) ? user.alunoId : getParam('id');
-  const isProf = user.perfil === 'professor';
-  if (isProf) actions.append(h('a', { class: 'btn btn--secondary', href: 'alunos.html' }, icon('chevron-left', { size: 18 }), 'Voltar'));
+  const isStaff = !isAluno(user);
+  const isAdmin = user.perfil === 'administrador'; // só o administrador edita dados e tag
+  if (isStaff) actions.append(h('a', { class: 'btn btn--secondary', href: 'alunos.html' }, icon('chevron-left', { size: 18 }), 'Voltar'));
   load();
 
   async function load() {
@@ -59,7 +60,7 @@ if (allowed) {
           h('div', null, h('dt', null, 'E-mail'), h('dd', null, aluno.email)),
           h('div', null, h('dt', null, 'Curso'), h('dd', null, aluno.curso)),
           h('div', null, h('dt', null, 'Turmas matriculadas'), h('dd', null, fmtInt(aluno.totalTurmas)))),
-        isProf ? h('button', { class: 'btn btn--secondary', type: 'button', onclick: () => editar(aluno) }, icon('edit', { size: 18 }), 'Editar dados') : null));
+        isAdmin ? h('button', { class: 'btn btn--secondary', type: 'button', onclick: () => editar(aluno) }, icon('edit', { size: 18 }), 'Editar dados') : null));
 
     const tag = h('div', { class: 'card' },
       h('div', { class: 'card__header' }, h('h3', null, 'Tag RFID')),
@@ -67,7 +68,7 @@ if (allowed) {
         aluno.tagUid
           ? h('div', { class: 'tag-card' }, icon('tag', { size: 28 }), h('div', null, h('div', { class: 'mono' }, aluno.tagUid), h('small', null, `Vinculada em ${fmtDate(aluno.tagVinculadaEm)}`)))
           : h('div', { class: 'tag-card tag-card--empty' }, icon('tag', { size: 28 }), h('div', null, h('strong', null, 'Nenhuma tag vinculada'), h('small', null, 'Este aluno ainda não pode registrar presença por RFID.'))),
-        isProf ? h('div', { class: 'row' },
+        isAdmin ? h('div', { class: 'row' },
           h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onclick: () => editar(aluno) }, icon('link', { size: 16 }), aluno.tagUid ? 'Alterar tag' : 'Vincular tag'),
           aluno.tagUid ? h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => desvincular(aluno) }, 'Desvincular') : null) : null));
 
@@ -77,14 +78,14 @@ if (allowed) {
         gauge(geral.pct, geral.situacao),
         h('dl', { class: 'dl', style: 'flex:1' },
           h('div', null, h('dt', null, 'Aulas registradas'), h('dd', null, fmtInt(geral.aulas))),
-          h('div', null, h('dt', null, 'Presenças · atrasos'), h('dd', null, `${fmtInt(geral.presencas)} · ${fmtInt(geral.atrasos)}`)),
+          h('div', null, h('dt', null, 'Presenças'), h('dd', null, fmtInt(geral.presencas))),
           h('div', null, h('dt', null, 'Faltas'), h('dd', null, fmtInt(geral.faltas))))));
 
     const turmasCard = h('div', { class: 'card' },
-      h('div', { class: 'card__header' }, h('div', null, h('h3', null, 'Frequência por turma'), h('p', null, 'Presenças e atrasos contam como comparecimento.'))),
+      h('div', { class: 'card__header' }, h('div', null, h('h3', null, 'Frequência por turma'), h('p', null, 'Percentual de comparecimento em cada disciplina.'))),
       h('div', { class: 'card__body' }, porTurma.length
         ? h('div', { class: 'bar-list' }, porTurma.map((t) => h('div', { class: 'bar-item' },
-          h('div', { class: 'bar-item__head' }, h('span', null, h('strong', { class: 'mono' }, t.turma.codigo), ` · ${t.disciplina.nome}`), h('span', { class: 'muted' }, `${t.presencas + t.atrasos}/${t.aulas} aulas`)),
+          h('div', { class: 'bar-item__head' }, h('span', null, h('strong', { class: 'mono' }, t.turma.codigo), ` · ${t.disciplina.nome}`), h('span', { class: 'muted' }, `${t.presencas}/${t.aulas} aulas`)),
           pctBar(t.pct, t.situacao))))
         : emptyState({ iconName: 'chart', title: 'Sem registros de frequência' })));
 

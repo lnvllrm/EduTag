@@ -14,7 +14,7 @@ extensões que a aplicação precisa, marcadas com `[EDUTAG]` no próprio SQL.
 | `matricula` | N:N aluno × turma | PK composta (`usuario_id`, `turma_id`) |
 | `aula` | Encontros de uma turma | `turma_id`, `data`, `inicio`, `fim`, `status` (`agendada`/`em_andamento`/`finalizada`/`cancelada`), **`tema`** |
 | `dispositivo` | Leitores RFID | `nome`, `local`, `ultima_comunicacao`, **`codigo`** (único), **`token_hash`**, **`firmware`**, **`ip`**, **`ativo`** |
-| `registro` | Presença do aluno em uma aula | `aula_id`, `usuario_id`, `data_hora_leitura`, `status` (`presente`/`atrasado`/`ausente`/`justificado`), `dispositivo_id` (nulo), **`origem`** (`rfid`/`manual`/`sistema`) — **único por (`aula_id`, `usuario_id`)** |
+| `registro` | Presença do aluno em uma aula | `aula_id`, `usuario_id`, `data_hora_leitura`, `status` (`presente`/`ausente`/`justificado`), `dispositivo_id` (nulo), **`origem`** (`rfid`/`manual`/`sistema`) — **único por (`aula_id`, `usuario_id`)** |
 | **`leitura_rfid`** | Log bruto de TODA leitura recebida | `dispositivo_id`, `uid`, `lido_em`, `resultado` (`registrada`/`duplicada`/`fora_de_horario`/`tag_desconhecida`), `usuario_id`, `aula_id`, `registro_id` |
 | **`tentativa_login`** | Limite de tentativas de senha | `identificador`, `ip`, `criada_em` |
 
@@ -33,7 +33,7 @@ extensões que a aplicação precisa, marcadas com `[EDUTAG]` no próprio SQL.
 | Conceito | Banco | API / front |
 |---|---|---|
 | Matrícula do aluno | `usuario.ra` | `matricula` |
-| Perfil | `tipo`: aluno → `aluno`; professor e administrador → `professor` | `perfil` (o front tem 2 perfis; administrador tem o acesso do professor) |
+| Perfil | `tipo`: `aluno`, `professor`, `administrador` | `perfil` (igual ao `tipo`; o professor só enxerga as turmas em que é o responsável) |
 | Falta | `registro.status = 'ausente'` | `falta` |
 | Aula realizada | `aula.status = 'finalizada'` | `realizada` |
 | Status do leitor | **não é gravado**: derivado de `ultima_comunicacao` | `online` (≤ 2 min), `instavel` (≤ 15 min), `offline` |
@@ -44,9 +44,9 @@ Limites configuráveis em `backend/config/config.php`.
 
 ## Regras que o back-end aplica
 
-- **Frequência**: comparecimento = `presente` + `atrasado`. Falta `justificado` (abonada) **não entra no denominador** do percentual, mas aparece separada. *Confirmar com a coordenação*, assim como os limites 85% / 75%.
+- **Frequência**: comparecimento = `presente` (não existe status de atraso). Falta `justificado` (abonada) **não entra no denominador** do percentual, mas aparece separada. *Confirmar com a coordenação*, assim como os limites 85% / 75%.
 - **Finalizar a aula** (status `finalizada`) gera `ausente` (origem `sistema`) para todo aluno ativo matriculado sem registro; reabrir a aula desfaz essas faltas. `bin/encerrar-aulas.php` faz o mesmo automaticamente após o fim da aula.
-- **Leitura RFID**: tag de aluno ativo → aula de hoje (agendada/em andamento) das turmas dele, na janela `[início − 15 min, fim]`; atraso após 15 min do início; segunda leitura = `duplicada`. Ver `backend/src/Services/RfidService.php`.
+- **Leitura RFID**: tag de aluno ativo → aula de hoje (agendada/em andamento) das turmas dele, na janela `[início − 15 min, fim]` (sempre `presente`); segunda leitura = `duplicada`. Ver `backend/src/Services/RfidService.php`.
 - **Exclusões**: aluno com registros, aula com presenças reais, disciplina com turmas e turma com aulas retornam `409` (preserva o histórico; para alunos, marque como inativo).
 
 ## Relações

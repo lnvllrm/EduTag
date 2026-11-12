@@ -19,7 +19,7 @@ const { user, content, allowed } = await initPage({
   page: 'calendario',
   title: (u) => (u.perfil === 'aluno' ? 'Meu calendário' : 'Calendário de aulas'),
   subtitle: (u) => (u.perfil === 'aluno'
-    ? 'Suas aulas do mês e como você ficou em cada uma: presente, atrasado ou falta.'
+    ? 'Suas aulas do mês e como você ficou em cada uma: presente ou falta.'
     : 'Aulas do mês por turma. Abra uma aula realizada para ver quem veio e quem não veio.'),
 });
 
@@ -118,7 +118,6 @@ if (allowed) {
     mount(summary,
       isAluno
         ? [chip(statusBadge('presenca', 'presente'), count((a) => a.presenca?.status === 'presente')),
-          chip(statusBadge('presenca', 'atrasado'), count((a) => a.presenca?.status === 'atrasado')),
           chip(statusBadge('presenca', 'falta'), count((a) => a.presenca?.status === 'falta')),
           chip(statusBadge('aula', 'agendada'), count((a) => a.status === 'agendada'))]
         : [chip(statusBadge('aula', 'realizada'), count((a) => a.status === 'realizada')),
@@ -126,9 +125,9 @@ if (allowed) {
           chip(statusBadge('aula', 'cancelada'), count((a) => a.status === 'cancelada'))]);
 
     const legendItems = isAluno
-      ? [['presente', 'Presente'], ['atrasado', 'Atrasado'], ['falta', 'Falta'], ['agendada', 'Agendada'], ['cancelada', 'Cancelada']]
-      : [['realizada', 'Realizada'], ['agendada', 'Agendada'], ['cancelada', 'Cancelada']];
-    const colors = { presente: 'var(--success)', realizada: 'var(--success)', atrasado: 'var(--warning)', falta: 'var(--danger)', agendada: 'var(--primary)', cancelada: 'var(--border-strong)' };
+      ? [['presente', 'Presente'], ['falta', 'Falta'], ['agendada', 'Agendada'], ['cancelada', 'Cancelada']]
+      : [['realizada', 'Finalizada'], ['agendada', 'Agendada'], ['cancelada', 'Cancelada']];
+    const colors = { presente: 'var(--success)', realizada: 'var(--success)', falta: 'var(--danger)', agendada: 'var(--primary)', cancelada: 'var(--border-strong)' };
     mount(legendBox, legendItems.map(([k, label]) => h('span', null, h('i', { style: `background:${colors[k]}` }), label)));
 
     if (!doMes.length) mount(summary, h('span', { class: 'muted', style: 'font-size:var(--fs-sm)' }, 'Nenhuma aula neste mês.'));
@@ -178,7 +177,7 @@ if (allowed) {
                 ? h('ul', { class: 'name-list' }, rows.map((p) => h('li', null, h('a', { href: `aluno.html?id=${p.aluno.id}` }, p.aluno.nome))))
                 : h('p', { class: 'subtle', style: 'font-size:var(--fs-sm)' }, label));
           };
-          mount(chamada, h('div', { class: 'chamada' }, col('falta', 'Ninguém faltou.'), col('atrasado', 'Ninguém atrasou.'), col('presente', 'Ninguém presente.'), ...(r.justificados ? [col('justificado', 'Nenhuma falta justificada.')] : [])));
+          mount(chamada, h('div', { class: 'chamada' }, col('falta', 'Ninguém faltou.'), col('presente', 'Ninguém presente.'), ...(r.justificados ? [col('justificado', 'Nenhuma falta justificada.')] : [])));
         } catch (err) {
           mount(chamada, errorState({ message: errorMessage(err) }));
         }
@@ -186,7 +185,7 @@ if (allowed) {
       });
       block.append(
         h('div', { class: 'summary-chips', style: 'padding:0' },
-          chip2('presente', r.presentes), chip2('atrasado', r.atrasados), chip2('falta', r.faltas), ...(r.justificados ? [chip2('justificado', r.justificados)] : [])),
+          chip2('presente', r.presentes), chip2('falta', r.faltas), ...(r.justificados ? [chip2('justificado', r.justificados)] : [])),
         h('div', { class: 'row' }, btn, h('a', { class: 'btn btn--ghost btn--sm', href: `presencas.html?aulaId=${a.id}` }, 'Abrir em Presenças')),
         chamada);
     } else if (a.status === 'agendada') {

@@ -87,7 +87,6 @@ if (allowed) {
               { key: 'turma', label: 'Turma', render: (l) => h('div', null, h('span', { class: 'mono' }, l.turma), h('div', { class: 'person__meta' }, l.disciplina)) },
               { key: 'aulas', label: 'Aulas', numeric: true },
               { key: 'presencas', label: 'Pres.', numeric: true },
-              { key: 'atrasos', label: 'Atrasos', numeric: true },
               { key: 'faltas', label: 'Faltas', numeric: true },
               { key: 'pct', label: '% presença', render: (l) => pctBar(l.pct, l.situacao) },
               { key: 'situacao', label: 'Situação', render: (l) => statusBadge('situacao', l.situacao) },
@@ -103,8 +102,8 @@ if (allowed) {
 
   function exportCSV() {
     downloadCSV('relatorio-frequencia-edutag.csv',
-      ['Aluno', 'Matrícula', 'Turma', 'Disciplina', 'Aulas', 'Presenças', 'Atrasos', 'Faltas', '% Presença', 'Situação'],
-      rows.map((l) => [l.nome, l.matricula, l.turma, l.disciplina, l.aulas, l.presencas, l.atrasos, l.faltas, String(l.pct).replace('.', ','), l.situacao]));
+      ['Aluno', 'Matrícula', 'Turma', 'Disciplina', 'Aulas', 'Presenças', 'Faltas', '% Presença', 'Situação'],
+      rows.map((l) => [l.nome, l.matricula, l.turma, l.disciplina, l.aulas, l.presencas, l.faltas, String(l.pct).replace('.', ','), l.situacao]));
     toast.success('Relatório exportado.');
   }
 

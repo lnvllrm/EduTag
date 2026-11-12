@@ -20,7 +20,6 @@ export const OPT_DIAS = [1, 2, 3, 4, 5, 6, 0].map((n) => ({ value: n, label: wee
 
 export const OPT_STATUS_PRESENCA = [
   { value: 'presente', label: 'Presente' },
-  { value: 'atrasado', label: 'Atrasado' },
   { value: 'falta', label: 'Falta' },
   { value: 'justificado', label: 'Justificado' },
 ];
@@ -28,6 +27,6 @@ export const OPT_STATUS_PRESENCA = [
 export const OPT_STATUS_AULA = [
   { value: 'agendada', label: 'Agendada' },
   { value: 'em_andamento', label: 'Em andamento' },
-  { value: 'realizada', label: 'Realizada' },
+  { value: 'realizada', label: 'Finalizada' },
   { value: 'cancelada', label: 'Cancelada' },
 ];

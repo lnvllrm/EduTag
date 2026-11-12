@@ -61,6 +61,25 @@ final class Validator
         return $this->clean[$field] = (int) $raw;
     }
 
+    /** Senha opcional: vazia → null (o controller aplica o padrão); se informada, mínimo de $min caracteres. */
+    public function senhaOpcional(string $field = 'senha', int $min = 8): ?string
+    {
+        $raw = $this->input[$field] ?? null;
+        $value = is_string($raw) ? $raw : '';
+        if ($value === '') {
+            return null;
+        }
+        if (mb_strlen($value) < $min) {
+            $this->fail($field, "A senha deve ter pelo menos $min caracteres.");
+            return null;
+        }
+        if (mb_strlen($value) > 72) { // limite do bcrypt
+            $this->fail($field, 'Use no máximo 72 caracteres.');
+            return null;
+        }
+        return $value;
+    }
+
     public function email(string $field, string $requiredMessage, bool $required = true): ?string
     {
         $value = $this->text($field, $requiredMessage, 150, $required);

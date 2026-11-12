@@ -3,7 +3,8 @@
 ## Perfis
 | Perfil | Acesso |
 |---|---|
-| **Professor** | Visão total: dashboard com métricas (quem veio e quem faltou), alunos, turmas, disciplinas, aulas, calendário (com chamada por aula), presenças de todos os alunos, relatórios e dispositivos |
+| **Administrador** | Gestão total: cadastra alunos, professores, disciplinas, turmas e aulas (inclusive repetição semanal até o fim do semestre), gerencia dispositivos RFID e vê todas as métricas |
+| **Professor** | Somente consulta, e só do que é das turmas dele (`turma.professor_id`): dashboard, alunos, turmas, aulas, calendário, presenças e relatórios. Não cria nem edita nada |
 | **Aluno** | Somente os próprios dados: painel pessoal, calendário de aulas com a própria presença/falta, minhas presenças, minha frequência e minhas turmas |
 
 O menu (`layout/nav.js`) muda por perfil e as telas adaptam colunas, filtros e textos. O isolamento real dos dados é do back-end (`403` / filtro por aluno) — implementado em `backend/src/` e coberto por `backend/tests/smoke.php`; o mock em `mock/server.js` o espelha para demonstrar o front sem banco.

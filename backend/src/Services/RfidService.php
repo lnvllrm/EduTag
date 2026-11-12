@@ -17,8 +17,7 @@ use EduTag\Core\Fmt;
  *     cuja janela [início − N min, fim + M min] contenha o momento da leitura,
  *     senão → fora_de_horario;
  *  3. se o aluno já tem registro nessa aula → duplicada (nada muda);
- *  4. caso contrário grava o registro: "atrasado" se passou da tolerância após
- *     o início, "presente" nos demais casos, e a aula passa a "em andamento".
+ *  4. caso contrário grava o registro como "presente" e a aula passa a "em andamento".
  *
  * Toda leitura é gravada em leitura_rfid, qualquer que seja o resultado.
  */
@@ -53,8 +52,7 @@ final class RfidService
             return self::resposta('duplicada', 'Presença já registrada nesta aula.', $aluno, Fmt::presenca($existente['status']));
         }
 
-        $inicio = strtotime($aula['data'] . ' ' . $aula['inicio']);
-        $status = $agora > $inicio + 60 * (int) Config::get('rfid.tolerancia_atraso_min', 15) ? 'atrasado' : 'presente';
+        $status = 'presente';
 
         try {
             $registroId = Database::transaction(function () use ($aula, $aluno, $now, $status, $dispositivo): int {
@@ -77,7 +75,7 @@ final class RfidService
         }
 
         self::logar($dispositivo, $uid, $now, 'registrada', (int) $aluno['id'], (int) $aula['id'], $registroId);
-        return self::resposta('registrada', $status === 'atrasado' ? 'Presença registrada (atraso).' : 'Presença registrada.', $aluno, $status);
+        return self::resposta('registrada', 'Presença registrada.', $aluno, $status);
     }
 
     /** Aula de hoje, das turmas do aluno, cuja janela contém o instante da leitura (a mais próxima do início). */

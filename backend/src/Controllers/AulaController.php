@@ -5,6 +5,7 @@ namespace EduTag\Controllers;
 
 use EduTag\Core\ApiException;
 use EduTag\Core\Database;
+use EduTag\Core\Escopo;
 use EduTag\Core\Fmt;
 use EduTag\Core\Paginator;
 use EduTag\Core\Request;
@@ -31,6 +32,9 @@ final class AulaController
             $where[] = 'EXISTS (SELECT 1 FROM matricula ms WHERE ms.turma_id = a.turma_id AND ms.usuario_id = :f_uid)';
             $params['f_uid'] = $user['id'];
         }
+        [$escW, $escP] = Escopo::turma($user);
+        $where = array_merge($where, $escW);
+        $params += $escP;
         if (($v = $req->queryInt('turmaId')) !== null) {
             $where[] = 'a.turma_id = :f_turma';
             $params['f_turma'] = $v;
@@ -60,15 +64,21 @@ final class AulaController
     public function criar(Request $req, array $p, array $user): Response
     {
         $d = $this->validar($req->body());
-        $id = Database::transaction(function () use ($d): int {
+        $repeticoes = 0;
+        $id = Database::transaction(function () use ($d, &$repeticoes): int {
             $id = Database::insert(
                 'INSERT INTO aula (turma_id, `data`, inicio, fim, status, tema) VALUES (:turma, :data, :ini, :fim, :status, :tema)',
                 $this->params($d),
             );
             AulaService::aplicarTransicao($id, $d['turmaId'], null, Fmt::aulaDb($d['status']));
+            if ($d['repetir'] === 'semanal') {
+                $repeticoes = AulaService::repetirSemanalmente($d['turmaId'], $d['data'], $d['inicio'], $d['fim'], $d['tema']);
+            }
             return $id;
         });
-        return Response::created(self::views([$this->buscar($id)], $user)[0]);
+        $aula = self::views([$this->buscar($id)], $user)[0];
+        $aula['aulasCriadas'] = 1 + $repeticoes; // com repetição semanal: a aula informada + as seguintes até o fim do termo
+        return Response::created($aula);
     }
 
     public function atualizar(Request $req, array $p, array $user): Response
@@ -140,7 +150,7 @@ final class AulaController
 
         $semRegistro = $user['perfil'] === 'aluno'
             ? ['presenca' => null]
-            : ['resumo' => ['presentes' => 0, 'atrasados' => 0, 'faltas' => 0, 'justificados' => 0, 'total' => 0]];
+            : ['resumo' => ['presentes' => 0, 'faltas' => 0, 'justificados' => 0, 'total' => 0]];
 
         return array_map(static fn (array $r) => self::base($r) + ($extra[(int) $r['id']] ?? $semRegistro), $rows);
     }
@@ -179,6 +189,7 @@ final class AulaController
         $fim = $v->time('fim', 'Informe o horário de término.');
         $tema = $v->text('tema', '', 150, false);
         $status = $v->enum('status', self::STATUS_API, 'Status inválido.', 'agendada');
+        $repetir = $v->enum('repetir', ['nao', 'semanal'], 'Opção de repetição inválida.', 'nao');
 
         if ($inicio !== null && $fim !== null && !$v->failed('inicio') && !$v->failed('fim') && $fim <= $inicio) {
             $v->fail('fim', 'O término deve ser posterior ao início.');
@@ -187,6 +198,6 @@ final class AulaController
             $v->fail('turmaId', 'Selecione a turma.');
         }
         $v->check();
-        return ['turmaId' => $turmaId, 'data' => $data, 'inicio' => $inicio, 'fim' => $fim, 'tema' => $tema, 'status' => $status];
+        return ['turmaId' => $turmaId, 'data' => $data, 'inicio' => $inicio, 'fim' => $fim, 'tema' => $tema, 'status' => $status, 'repetir' => $repetir];
     }
 }

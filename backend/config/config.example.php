@@ -50,8 +50,13 @@ return [
     // Regras da leitura de tags (Arduino).
     'rfid' => [
         'minutos_antes_inicio'  => 15,  // aceita leitura a partir de N min antes da aula
-        'tolerancia_atraso_min' => 15,  // depois disso (após o início) vira "atrasado"
         'minutos_apos_fim'      => 0,   // aceita leitura até N min depois do fim da aula
+    ],
+
+    // Fim dos semestres (MM-DD), usado na repetição semanal de aulas "até o fim do termo".
+    'termo' => [
+        'fim_1_semestre' => '06-30',
+        'fim_2_semestre' => '12-15',
     ],
 
     // Estado do leitor derivado da última comunicação.
@@ -60,8 +65,4 @@ return [
         'instavel_seg' => 900,  // até 15 min → instável; acima → offline
     ],
 
-    // bin/encerrar-aulas.php: finaliza aulas que terminaram há mais de N minutos.
-    'aulas' => [
-        'encerrar_apos_min' => 30,
-    ],
 ];

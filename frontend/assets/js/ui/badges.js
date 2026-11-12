@@ -5,7 +5,6 @@ import { icon } from './icons.js';
 const MAPS = {
   presenca: {
     presente: ['success', 'Presente'],
-    atrasado: ['warning', 'Atrasado'],
     falta: ['danger', 'Falta'],
     justificado: ['primary', 'Justificado'],
   },
@@ -17,7 +16,7 @@ const MAPS = {
   aula: {
     agendada: ['primary', 'Agendada'],
     em_andamento: ['warning', 'Em andamento'],
-    realizada: ['success', 'Realizada'],
+    realizada: ['success', 'Finalizada'],
     cancelada: ['danger', 'Cancelada'],
   },
   aluno: {

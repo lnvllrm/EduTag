@@ -236,8 +236,8 @@ ok($s === 200 && $j['data'][0]['resultado'] === 'duplicada', 'log de leituras re
 $d1 = array_values(array_filter($j['data'] ?? [], fn ($d) => $d['codigo'] === 'ET-RDR-01'))[0] ?? [];
 ok(($d1['status'] ?? '') === 'online' && ($d1['leiturasHoje'] ?? 0) >= 3 && !isset($d1['token_hash']), 'dispositivo online, contagem do dia, sem vazar o hash do token', $d1);
 
-// --- atraso e fora do horário
-[$s, $j] = $prof->call('POST', 'alunos', ['nome' => 'ZZ Teste Atrasado', 'matricula' => 'ZZ0002', 'email' => 'zz.atrasado@aluno.edutag.edu.br', 'tagUid' => '0A0B0C0D']);
+// --- segundo aluno e fora do horário
+[$s, $j] = $prof->call('POST', 'alunos', ['nome' => 'ZZ Teste Segundo', 'matricula' => 'ZZ0002', 'email' => 'zz.segundo@aluno.edutag.edu.br', 'tagUid' => '0A0B0C0D']);
 $zz2 = $j['data']['id'] ?? 0;
 [$s, $j] = $anon->call('POST', 'rfid/leitura', ['uid' => '0A0B0C0D'], $dev);
 ok($s === 200 && $j['data']['resultado'] === 'fora_de_horario', 'aluno sem turma/aula → fora do horário', $j);
@@ -245,7 +245,7 @@ $prof->call('PUT', "turmas/$tId/alunos", ['alunoIds' => [$zzId, $zz2]]);
 [$s, $j] = $prof->call('PUT', "aulas/$aId", ['turmaId' => $tId, 'data' => $hoje, 'inicio' => date('H:i', time() - 40 * 60), 'fim' => $fim, 'tema' => 'ZZ aula', 'status' => 'em_andamento']);
 ok($s === 200, 'ajusta início da aula para 40 min atrás');
 [$s, $j] = $anon->call('POST', 'rfid/leitura', ['uid' => '0A0B0C0D'], $dev);
-ok($s === 200 && $j['data']['resultado'] === 'registrada' && $j['data']['status'] === 'atrasado', 'leitura após a tolerância → atrasado', $j);
+ok($s === 200 && $j['data']['resultado'] === 'registrada' && $j['data']['status'] === 'presente', 'leitura dentro da aula → presente', $j);
 
 // --- finalização gera faltas
 [$s, $j] = $prof->call('POST', 'alunos', ['nome' => 'ZZ Teste Faltoso', 'matricula' => 'ZZ0003', 'email' => 'zz.faltoso@aluno.edutag.edu.br']);
@@ -254,7 +254,7 @@ $prof->call('PUT', "turmas/$tId/alunos", ['alunoIds' => [$zzId, $zz2, $zz3]]);
 [$s, $j] = $prof->call('GET', "aulas?turmaId=$tId");
 $aulaAtual = $j['data'][0];
 [$s, $j] = $prof->call('PUT', "aulas/$aId", ['turmaId' => $tId, 'data' => $aulaAtual['data'], 'inicio' => $aulaAtual['inicio'], 'fim' => $aulaAtual['fim'], 'tema' => 'ZZ aula', 'status' => 'realizada']);
-ok($s === 200 && $j['data']['status'] === 'realizada' && $j['data']['resumo'] === ['presentes' => 1, 'atrasados' => 1, 'faltas' => 1, 'justificados' => 0, 'total' => 3], 'finalizar a aula gera "falta" para quem não passou a tag', $j['data']['resumo'] ?? $j);
+ok($s === 200 && $j['data']['status'] === 'realizada' && $j['data']['resumo'] === ['presentes' => 2, 'faltas' => 1, 'justificados' => 0, 'total' => 3], 'finalizar a aula gera "falta" para quem não passou a tag', $j['data']['resumo'] ?? $j);
 [$s, $j] = $prof->call('GET', "presencas?aulaId=$aId&status=falta");
 ok($s === 200 && count($j['data']) === 1 && $j['data'][0]['origem'] === 'sistema' && $j['data'][0]['aluno']['id'] === $zz3, 'filtro por status "falta"');
 [$s, $j] = $anon->call('POST', 'rfid/leitura', ['uid' => 'A1B2C3D4'], $dev);

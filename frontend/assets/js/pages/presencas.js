@@ -14,7 +14,7 @@ const { user, content, actions, allowed } = await initPage({
   page: 'presencas',
   title: (u) => (u.perfil === 'aluno' ? 'Minhas presenças' : 'Presenças'),
   subtitle: (u) => (u.perfil === 'aluno'
-    ? 'Seu histórico de presenças, atrasos e faltas por aula.'
+    ? 'Seu histórico de presenças e faltas por aula.'
     : 'Consulta de registros de presença por aluno, turma, disciplina e período.'),
 });
 
@@ -48,7 +48,6 @@ if (allowed) {
     ].filter(Boolean),
     summary: (meta) => h('div', { class: 'summary-chips' },
       h('span', { class: 'summary-chip' }, statusBadge('presenca', 'presente'), h('b', null, fmtInt(meta.resumo.presentes))),
-      h('span', { class: 'summary-chip' }, statusBadge('presenca', 'atrasado'), h('b', null, fmtInt(meta.resumo.atrasados))),
       h('span', { class: 'summary-chip' }, statusBadge('presenca', 'falta'), h('b', null, fmtInt(meta.resumo.faltas))),
       h('span', { class: 'summary-chip muted' }, `${fmtInt(meta.resumo.total)} registros no filtro`)),
     columns: [

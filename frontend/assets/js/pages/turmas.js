@@ -12,20 +12,20 @@ import { optDisciplinas, optProfessores, OPT_DIAS } from '../schemas/options.js'
 
 const { user, content, actions, allowed } = await initPage({
   page: 'turmas',
-  title: (u) => (u.perfil === 'aluno' ? 'Minhas turmas' : 'Turmas'),
-  subtitle: (u) => (u.perfil === 'aluno' ? 'Turmas em que você está matriculado, com professor e horários.' : 'Turmas, disciplinas, horários e alunos matriculados.'),
+  title: (u) => (u.perfil === 'aluno' ? 'Meu curso/turmas' : 'Curso/turmas'),
+  subtitle: (u) => (u.perfil === 'aluno' ? 'Turmas em que você está matriculado, com professor e horários.' : u.perfil === 'professor' ? 'Turmas pelas quais você é responsável.' : 'Turmas, disciplinas, horários e alunos matriculados.'),
 });
 
 if (allowed) {
-  const isProf = user.perfil === 'professor'; // professor gerencia turmas; aluno apenas consulta
+  const isAdmin = user.perfil === 'administrador'; // administrador gerencia turmas; professor e aluno apenas consultam
 
   const crud = createCrudPage({
     mount: content, actions, resource: Turmas, singular: 'turma', plural: 'turmas', gender: 'f',
-    canCreate: isProf, canEdit: isProf, canDelete: isProf,
+    canCreate: isAdmin, canEdit: isAdmin, canDelete: isAdmin,
     search: 'Código, disciplina, professor ou sala',
     defaultSort: { key: 'codigo', order: 'asc' },
-    // A lista de disciplinas é restrita ao professor (o aluno recebe 403); então só ele tem esse filtro.
-    filters: isProf ? [{ name: 'disciplinaId', label: 'Disciplina', allLabel: 'Todas', loadOptions: optDisciplinas }] : [],
+    // A lista de disciplinas é restrita à equipe (o aluno recebe 403); então só ela tem esse filtro.
+    filters: user.perfil !== 'aluno' ? [{ name: 'disciplinaId', label: 'Disciplina', allLabel: 'Todas', loadOptions: optDisciplinas }] : [],
     columns: [
       {
         key: 'codigo', label: 'Turma', sortable: true,
@@ -53,7 +53,7 @@ if (allowed) {
     modalSize: 'lg',
     rowActions: (t) => [
       { icon: 'check-circle', label: 'Ver presenças da turma', onClick: () => { location.href = `presencas.html?turmaId=${t.id}`; } },
-      isProf ? { icon: 'users', label: 'Gerenciar alunos da turma', onClick: () => gerenciarAlunos(t, crud.reload) } : null,
+      isAdmin ? { icon: 'users', label: 'Gerenciar alunos da turma', onClick: () => gerenciarAlunos(t, crud.reload) } : null,
     ].filter(Boolean),
     deleteMessage: (t) => `Excluir a turma ${t.codigo}? As matrículas dela serão removidas. Turmas com aulas cadastradas não podem ser excluídas.`,
   });

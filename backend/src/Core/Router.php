@@ -6,18 +6,20 @@ namespace EduTag\Core;
 /**
  * Roteador mínimo. Cada rota declara quais perfis podem acessá-la:
  *   null              → pública (login, rotas autenticadas por token de dispositivo)
- *   ['professor']     → padrão para tudo que é administrativo
- *   ['professor','aluno'] → rotas compartilhadas (o controller restringe o conteúdo do aluno)
+ *   ['administrador']                → padrão: cadastros e configurações
+ *   ['administrador','professor']    → consultas da equipe (o controller limita o professor às turmas dele)
+ *   os três perfis                   → rotas compartilhadas (o controller limita professor e aluno)
  */
 final class Router
 {
-    public const ALL = ['professor', 'aluno'];
-    public const PROF = ['professor'];
+    public const ALL = ['administrador', 'professor', 'aluno'];
+    public const STAFF = ['administrador', 'professor'];
+    public const ADMIN = ['administrador'];
 
     /** @var list<array{method:string,regex:string,handler:array,roles:?array}> */
     private array $routes = [];
 
-    public function add(string $method, string $pattern, array $handler, ?array $roles = self::PROF): void
+    public function add(string $method, string $pattern, array $handler, ?array $roles = self::ADMIN): void
     {
         $regex = preg_replace('#\{(\w+)\}#', '(?P<$1>[0-9]+)', $pattern);
         $this->routes[] = ['method' => $method, 'regex' => "#^{$regex}$#", 'handler' => $handler, 'roles' => $roles];

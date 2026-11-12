@@ -19,7 +19,7 @@ backend/
 ```
 
 ## Configuração
-Copie `config/config.example.php` para `config/config.php`. Sem ele, vale o exemplo (padrão do XAMPP). Também aceita variáveis de ambiente `EDUTAG_DB_HOST/PORT/NAME/USER/PASS`. Aí ficam, além do banco: sessão, limite de login, **limiares de frequência (85% / 75%)**, janela e tolerância de atraso da leitura RFID, tempo para o leitor ser considerado online/instável.
+Copie `config/config.example.php` para `config/config.php`. Sem ele, vale o exemplo (padrão do XAMPP). Também aceita variáveis de ambiente `EDUTAG_DB_HOST/PORT/NAME/USER/PASS`. Aí ficam, além do banco: sessão, limite de login, **limiares de frequência (85% / 75%)**, janela de leitura RFID, tempo para o leitor ser considerado online/instável.
 
 ## Scripts (`php backend/bin/<script>`)
 | Script | Para quê |

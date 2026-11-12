@@ -119,7 +119,11 @@
   border-bottom: 1px solid var(--border);
 }
 
-.topbar__menu { display: none; }
+/* Em telas largas o menu é recolhido (não existe gaveta); o botão fica sempre visível. */
+@media (min-width: 1025px) {
+  .app.nav-collapsed { grid-template-columns: minmax(0, 1fr); }
+  .app.nav-collapsed .sidebar { display: none; }
+}
 
 .crumbs { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: var(--fs-sm); }
 .crumbs strong { color: var(--text); font-weight: 600; }
@@ -170,7 +174,6 @@
   }
   .app.nav-open .sidebar { transform: none; }
   .app.nav-open .sidebar-overlay { display: block; }
-  .topbar__menu { display: inline-flex; }
 }
 
 @media (max-width: 720px) {

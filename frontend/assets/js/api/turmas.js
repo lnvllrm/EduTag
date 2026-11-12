@@ -9,7 +9,7 @@ export const Turmas = {
   definirAlunos: async (id, alunoIds) => (await api.put(`turmas/${id}/alunos`, { alunoIds })).data,
 };
 
-/** Professores disponíveis para associar a turmas. GET /professores */
+/** Professores ativos disponíveis para associar a turmas. GET /professores */
 export const Professores = {
-  listarTodos: async () => (await api.get('professores')).data,
+  listarTodos: async () => (await api.get('professores', { status: 'ativo', perPage: 100 })).data,
 };

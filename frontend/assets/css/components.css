@@ -511,7 +511,6 @@ th[aria-sort="ascending"] .icon { transform: rotate(180deg); }
 }
 .cal-ev span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cal-ev--presente { background: var(--success-soft); color: var(--success); border-left-color: var(--success); }
-.cal-ev--atrasado { background: var(--warning-soft); color: var(--warning); border-left-color: var(--warning); }
 .cal-ev--falta { background: var(--danger-soft); color: var(--danger); border-left-color: var(--danger); }
 .cal-ev--justificado { background: var(--primary-soft); color: var(--primary); border-left-color: var(--primary); }
 .cal-ev--agendada { background: var(--primary-soft); color: var(--primary); border-left-color: var(--primary); }
@@ -536,7 +535,6 @@ th[aria-sort="ascending"] .icon { transform: rotate(180deg); }
   .cal-ev { width: 10px; height: 10px; padding: 0; border-radius: 50%; border-left-width: 0; background: var(--text-subtle); }
   .cal-ev span { display: none; }
   .cal-ev--presente, .cal-ev--realizada { background: var(--success); }
-  .cal-ev--atrasado { background: var(--warning); }
   .cal-ev--falta { background: var(--danger); }
   .cal-ev--agendada, .cal-ev--justificado { background: var(--primary); }
   .cal__events { flex-direction: row; flex-wrap: wrap; justify-content: center; }

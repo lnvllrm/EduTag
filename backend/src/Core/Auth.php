@@ -103,8 +103,8 @@ final class Auth
             'email'           => $row['email'],
             'matricula'       => $row['ra'],
             'tipo'            => $row['tipo'],
-            // O front trabalha com dois perfis; administrador tem o mesmo acesso do professor.
-            'perfil'          => $isAluno ? 'aluno' : 'professor',
+            // Perfis: administrador (gestão total), professor (somente as próprias turmas) e aluno (somente o que é dele).
+            'perfil'          => $row['tipo'],
             'senhaProvisoria' => (bool) $row['senha_provisoria'],
         ];
         if ($isAluno) {

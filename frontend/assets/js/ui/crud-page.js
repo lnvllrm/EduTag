@@ -119,8 +119,8 @@ export function createCrudPage(cfg) {
         onRowClick: cfg.onRowClick,
         actions: hasActions ? (row) => [
           ...(cfg.rowActions?.(row) ?? []),
-          perm.edit ? { icon: 'edit', label: 'Editar', onClick: openForm } : null,
-          perm.delete ? { icon: 'trash', label: 'Excluir', danger: true, onClick: remove } : null,
+          perm.edit && (cfg.rowEditable?.(row) ?? true) ? { icon: 'edit', label: 'Editar', onClick: openForm } : null,
+          perm.delete && (cfg.rowEditable?.(row) ?? true) ? { icon: 'trash', label: 'Excluir', danger: true, onClick: remove } : null,
         ].filter(Boolean) : undefined,
       }),
       renderPagination({ ...meta, onPage: (p) => { state.page = p; load(); } }));

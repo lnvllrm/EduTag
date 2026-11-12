@@ -45,6 +45,8 @@ export async function initPage({ page, title: titleOrFn, subtitle: subtitleOrFn,
           actions),
         content)));
 
+  try { if (localStorage.getItem(COLLAPSE_KEY) === '1') shell.classList.add('nav-collapsed'); } catch { /* ignora */ }
+  new MutationObserver(() => syncMenuButton(shell)).observe(shell, { attributes: true, attributeFilter: ['class'] });
   mount(app, h('a', { class: 'skip-link', href: '#conteudo' }, 'Ir para o conteúdo'), shell);
   document.title = `${title} · ${CONFIG.APP_NAME}`;
 
@@ -58,11 +60,32 @@ export async function initPage({ page, title: titleOrFn, subtitle: subtitleOrFn,
     return { user, content: h('div'), actions, allowed: false };
   }
 
+  syncMenuButton(shell);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNav(shell); });
   return { user, content, actions, allowed: true };
 }
 
 function closeNav(shell) { shell.classList.remove('nav-open'); }
+
+/** Telas largas: recolhe/expande o menu lateral (lembrado entre páginas). Telas estreitas: abre/fecha a gaveta. */
+const COLLAPSE_KEY = `${CONFIG.STORAGE_PREFIX}nav-collapsed`;
+const isDrawerMode = () => window.matchMedia('(max-width: 1024px)').matches;
+function toggleNav(shell) {
+  if (isDrawerMode()) {
+    shell.classList.toggle('nav-open');
+    return;
+  }
+  const collapsed = shell.classList.toggle('nav-collapsed');
+  try { localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0'); } catch { /* armazenamento indisponível */ }
+}
+function syncMenuButton(shell) {
+  const btn = shell.querySelector('.topbar__menu');
+  if (!btn) return;
+  const open = isDrawerMode() ? shell.classList.contains('nav-open') : !shell.classList.contains('nav-collapsed');
+  btn.setAttribute('aria-expanded', String(open));
+  btn.setAttribute('aria-label', open ? 'Recolher menu' : 'Abrir menu');
+  btn.title = btn.getAttribute('aria-label');
+}
 
 function buildSidebar(user, page) {
   return h('aside', { class: 'sidebar', id: 'sidebar', 'aria-label': 'Menu principal' },
@@ -92,7 +115,7 @@ function buildTopbar(user, shell, current) {
   return h('header', { class: 'topbar' },
     h('button', {
       class: 'btn btn--icon topbar__menu', type: 'button', 'aria-label': 'Abrir menu', 'aria-controls': 'sidebar',
-      onclick: () => shell.classList.add('nav-open'),
+      onclick: () => toggleNav(shell),
     }, icon('menu')),
     h('div', { class: 'crumbs' }, h('span', { class: 'crumbs__root' }, 'EduTag'), h('span', { class: 'crumbs__root', 'aria-hidden': 'true' }, '/'), h('strong', null, current)),
     h('span', { class: 'spacer' }),

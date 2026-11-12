@@ -6,13 +6,16 @@ import { Aulas } from '../api/aulas.js';
 import { fmtDateLong, parseDate, dayOf, monthShort } from '../utils.js';
 import { optTurmas, OPT_STATUS_AULA } from '../schemas/options.js';
 
-const { content, actions, allowed } = await initPage({
-  page: 'aulas', title: 'Aulas', subtitle: 'Agenda de aulas por turma, com datas, horários e resumo de presenças.',
+const { user, content, actions, allowed } = await initPage({
+  page: 'aulas', title: 'Aulas',
+  subtitle: (u) => (u.perfil === 'administrador' ? 'Agenda de aulas por turma, com datas, horários e resumo de presenças.' : 'Aulas das suas turmas, com datas, horários e resumo de presenças.'),
 });
 
 if (allowed) {
+  const isAdmin = user.perfil === 'administrador'; // só o administrador cria e edita aulas
   createCrudPage({
     mount: content, actions, resource: Aulas, singular: 'aula', plural: 'aulas', gender: 'f',
+    canCreate: isAdmin, canEdit: isAdmin, canDelete: isAdmin,
     search: 'Tema, turma ou disciplina',
     defaultSort: { key: 'data', order: 'desc' },
     filters: [
@@ -36,17 +39,23 @@ if (allowed) {
       { key: 'status', label: 'Status', sortable: true, render: (a) => statusBadge('aula', a.status) },
       {
         key: 'resumo', label: 'Presenças', numeric: true,
-        render: (a) => (a.resumo.total ? `${a.resumo.presentes + a.resumo.atrasados}/${a.resumo.total}` : h('span', { class: 'subtle' }, '—')),
+        render: (a) => (a.resumo.total ? `${a.resumo.presentes}/${a.resumo.total}` : h('span', { class: 'subtle' }, '—')),
       },
     ],
-    fields: [
+    fields: (mode) => [
       { name: 'turmaId', label: 'Turma', type: 'select', required: true, full: true, loadOptions: optTurmas },
       { name: 'data', label: 'Data', type: 'date', required: true },
       { name: 'status', label: 'Status', type: 'select', required: true, defaultValue: 'agendada', options: OPT_STATUS_AULA },
       { name: 'inicio', label: 'Início', type: 'time', required: true, defaultValue: '19:00' },
       { name: 'fim', label: 'Término', type: 'time', required: true, defaultValue: '20:40' },
       { name: 'tema', label: 'Tema / conteúdo', full: true, maxlength: 120 },
-    ],
+      // Só na criação: gera as aulas das semanas seguintes (mesmo dia da semana e horário) até o fim do semestre.
+      mode === 'create' ? {
+        name: 'repetir', label: 'Repetição', type: 'select', required: true, full: true, defaultValue: 'nao',
+        options: [{ value: 'nao', label: 'Não repetir' }, { value: 'semanal', label: 'Repetir toda semana até o fim do semestre' }],
+        hint: 'Ex.: criando para uma quarta-feira, todas as quartas até o fim do semestre da turma terão a aula.',
+      } : null,
+    ].filter(Boolean),
     rowActions: (a) => (a.resumo.total
       ? [{ icon: 'check-circle', label: 'Ver presenças desta aula', onClick: () => { location.href = `presencas.html?aulaId=${a.id}`; } }]
       : []),

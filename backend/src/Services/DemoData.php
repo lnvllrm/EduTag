@@ -167,17 +167,15 @@ final class DemoData
                     foreach ($matriculas[$t['id']] as $a) {
                         $r = mt_rand() / mt_getrandmax();
                         $reg = match (true) {
-                            $r < $a['taxa'] * 0.9 => 'presente',
-                            $r < $a['taxa']       => 'atrasado',
+                            $r < $a['taxa']       => 'presente',
                             default               => mt_rand(1, 40) === 1 ? 'justificado' : 'ausente',
                         };
                         $inicio = new \DateTimeImmutable($d->format('Y-m-d') . ' ' . $t['ini']);
                         $quando = match ($reg) {
                             'presente'  => $inicio->modify(mt_rand(-12, 6) . ' minutes'),
-                            'atrasado'  => $inicio->modify(mt_rand(16, 38) . ' minutes'),
                             default     => new \DateTimeImmutable($d->format('Y-m-d') . ' ' . $t['fim']),
                         };
-                        $comLeitura = in_array($reg, ['presente', 'atrasado'], true);
+                        $comLeitura = $reg === 'presente';
                         Database::insert(
                             'INSERT INTO registro (aula_id, usuario_id, data_hora_leitura, status, dispositivo_id, origem) VALUES (:a, :u, :q, :s, :d, :o)',
                             [

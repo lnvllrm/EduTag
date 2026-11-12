@@ -9,6 +9,11 @@ export const ALUNO_FIELDS = [
   { name: 'status', label: 'Situação', type: 'select', required: true, defaultValue: 'ativo', options: [{ value: 'ativo', label: 'Ativo' }, { value: 'inativo', label: 'Inativo' }] },
   { name: 'email', label: 'E-mail institucional', type: 'email', required: true, full: true, maxlength: 120 },
   {
+    name: 'senha', label: 'Senha de acesso', type: 'password', full: true, maxlength: 72,
+    pattern: '^.{8,72}$', patternMessage: 'Use de 8 a 72 caracteres.',
+    hint: 'Senha que o aluno usará no login (mín. 8 caracteres). Em branco: no cadastro, a matrícula vira a senha provisória; na edição, a senha atual é mantida.',
+  },
+  {
     name: 'tagUid', label: 'Tag RFID (UID)', full: true, placeholder: 'Ex.: A3:4F:1C:9B', maxlength: 23,
     pattern: '^([0-9A-Fa-f]{2}[:\\- ]?){3,9}[0-9A-Fa-f]{2}$', patternMessage: 'Informe o UID em hexadecimal (ex.: A3:4F:1C:9B).',
     hint: 'Digite o UID impresso na tag. Deixe em branco para o aluno ficar sem tag.',

@@ -5,6 +5,7 @@ namespace EduTag\Controllers;
 
 use EduTag\Core\ApiException;
 use EduTag\Core\Database;
+use EduTag\Core\Escopo;
 use EduTag\Core\Fmt;
 use EduTag\Core\Paginator;
 use EduTag\Core\Request;
@@ -18,10 +19,14 @@ final class AlunoController
     private const SELECT = "u.id, u.nome, u.ra AS matricula, u.email, u.curso, u.ativo, u.tag_uid, u.tag_vinculada_em,
         (SELECT COUNT(*) FROM matricula m WHERE m.usuario_id = u.id) AS total_turmas";
 
-    public function listar(Request $req): Response
+    public function listar(Request $req, array $p, array $user): Response
     {
         $where = ["u.tipo = 'aluno'"];
         $params = [];
+        if (Escopo::ehProfessor($user)) { // professor: somente alunos matriculados em turmas dele
+            $where[] = 'EXISTS (SELECT 1 FROM matricula me JOIN turma te ON te.id = me.turma_id WHERE me.usuario_id = u.id AND te.professor_id = :esc_prof)';
+            $params['esc_prof'] = $user['id'];
+        }
 
         if (($status = $req->queryString('status')) !== null) {
             $where[] = 'u.ativo = :f_ativo';
@@ -60,11 +65,12 @@ final class AlunoController
             try {
                 return Database::insert(
                     "INSERT INTO usuario (ra, nome, tipo, senha_hash, tag_uid, ativo, email, curso, tag_vinculada_em, senha_provisoria, criado_em)
-                     VALUES (:ra, :nome, 'aluno', :senha, :tag, :ativo, :email, :curso, :vinc, 1, :criado)",
+                     VALUES (:ra, :nome, 'aluno', :senha, :tag, :ativo, :email, :curso, :vinc, :prov, :criado)",
                     [
                         'ra' => $d['matricula'], 'nome' => $d['nome'],
-                        // Senha inicial = matrícula, marcada como provisória (o aluno deve trocá-la).
-                        'senha' => password_hash($d['matricula'], PASSWORD_DEFAULT),
+                        // Senha informada pelo admin (definitiva) ou, na falta dela, a matrícula como senha provisória.
+                        'senha' => password_hash($d['senha'] ?? $d['matricula'], PASSWORD_DEFAULT),
+                        'prov' => $d['senha'] === null ? 1 : 0,
                         'tag' => $d['tagUid'], 'ativo' => $d['ativo'], 'email' => $d['email'], 'curso' => $d['curso'],
                         'vinc' => $d['tagUid'] ? Fmt::agora() : null, 'criado' => Fmt::agora(),
                     ],
@@ -81,14 +87,16 @@ final class AlunoController
         $atual = $this->buscar($p['id']);
         $d = $this->validar($req->body(), $p['id']);
 
+        $trocaSenha = $d['senha'] !== null;
         $vinculadaEm = $d['tagUid'] === null ? null : ($atual['tag_uid'] === $d['tagUid'] ? $atual['tag_vinculada_em'] : Fmt::agora());
         try {
             Database::exec(
-                'UPDATE usuario SET ra = :ra, nome = :nome, email = :email, curso = :curso, ativo = :ativo, tag_uid = :tag, tag_vinculada_em = :vinc WHERE id = :id',
+                'UPDATE usuario SET ra = :ra, nome = :nome, email = :email, curso = :curso, ativo = :ativo, tag_uid = :tag, tag_vinculada_em = :vinc'
+                . ($trocaSenha ? ', senha_hash = :senha, senha_provisoria = 0' : '') . ' WHERE id = :id',
                 [
                     'ra' => $d['matricula'], 'nome' => $d['nome'], 'email' => $d['email'], 'curso' => $d['curso'],
                     'ativo' => $d['ativo'], 'tag' => $d['tagUid'], 'vinc' => $vinculadaEm, 'id' => $p['id'],
-                ],
+                ] + ($trocaSenha ? ['senha' => password_hash($d['senha'], PASSWORD_DEFAULT)] : []),
             );
         } catch (\PDOException $e) {
             $this->traduzirDuplicidade($e);
@@ -115,7 +123,15 @@ final class AlunoController
         $this->somenteProprio($user, $p['id']);
         $this->buscar($p['id']);
 
-        $geral = Database::one('SELECT ' . Frequencia::sqlContagens() . ' FROM registro r WHERE r.usuario_id = :id', ['id' => $p['id']]);
+        // O professor enxerga só os registros das aulas das turmas dele.
+        [$escW, $escP] = Escopo::turma($user);
+        $escSql = $escW ? ' AND ' . implode(' AND ', $escW) : '';
+        $params = ['id' => $p['id']] + $escP;
+
+        $geral = Database::one(
+            'SELECT ' . Frequencia::sqlContagens() . ' FROM registro r JOIN aula a ON a.id = r.aula_id JOIN turma t ON t.id = a.turma_id WHERE r.usuario_id = :id' . $escSql,
+            $params,
+        );
 
         $turmas = Database::all(
             'SELECT t.id, t.codigo, di.id AS disciplina_id, di.nome AS disciplina_nome, di.codigo AS disciplina_codigo, ' . Frequencia::sqlContagens() . '
@@ -123,10 +139,10 @@ final class AlunoController
                JOIN aula a ON a.id = r.aula_id
                JOIN turma t ON t.id = a.turma_id
                JOIN disciplina di ON di.id = t.disciplina_id
-              WHERE r.usuario_id = :id
+              WHERE r.usuario_id = :id' . $escSql . '
               GROUP BY t.id, t.codigo, di.id, di.nome, di.codigo
               ORDER BY t.codigo',
-            ['id' => $p['id']],
+            $params,
         );
         $porTurma = array_map(static fn (array $t) => [
             'turma'      => ['id' => (int) $t['id'], 'codigo' => $t['codigo']],
@@ -134,8 +150,8 @@ final class AlunoController
         ] + Frequencia::calcular($t), $turmas);
 
         $historico = Database::all(
-            'SELECT ' . Presencas::SELECT . ' FROM ' . Presencas::FROM . ' WHERE r.usuario_id = :id ORDER BY a.`data` DESC, a.inicio DESC LIMIT 30',
-            ['id' => $p['id']],
+            'SELECT ' . Presencas::SELECT . ' FROM ' . Presencas::FROM . ' WHERE r.usuario_id = :id' . $escSql . ' ORDER BY a.`data` DESC, a.inicio DESC LIMIT 30',
+            $params,
         );
 
         return Response::ok([
@@ -168,15 +184,21 @@ final class AlunoController
         return $row ?? throw ApiException::notFound('Aluno');
     }
 
-    /** O aluno só pode consultar os próprios dados. */
+    /** O aluno só consulta os próprios dados; o professor, apenas os de alunos das turmas dele. */
     private function somenteProprio(array $user, int $alunoId): void
     {
         if ($user['perfil'] === 'aluno' && $user['id'] !== $alunoId) {
             throw ApiException::forbidden();
         }
+        if (Escopo::ehProfessor($user) && !Database::value(
+            'SELECT 1 FROM matricula m JOIN turma t ON t.id = m.turma_id WHERE m.usuario_id = :a AND t.professor_id = :p LIMIT 1',
+            ['a' => $alunoId, 'p' => $user['id']],
+        )) {
+            throw ApiException::forbidden();
+        }
     }
 
-    /** @return array{nome:string,matricula:string,email:?string,curso:?string,ativo:int,tagUid:?string} */
+    /** @return array{nome:string,matricula:string,email:?string,curso:?string,ativo:int,tagUid:?string,senha:?string} */
     private function validar(array $body, ?int $id = null): array
     {
         $v = new Validator($body);
@@ -185,6 +207,7 @@ final class AlunoController
         $email = $v->email('email', 'Informe o e-mail.');
         $curso = $v->text('curso', '', 100, false) ?? 'Sistemas de Informação';
         $status = $v->enum('status', ['ativo', 'inativo'], 'Status inválido.', 'ativo');
+        $senha = $v->senhaOpcional();
 
         $tagUid = null;
         $tagRaw = $body['tagUid'] ?? null;
@@ -209,7 +232,7 @@ final class AlunoController
         }
         $v->check();
 
-        return ['nome' => $nome, 'matricula' => $matricula, 'email' => $email, 'curso' => $curso, 'ativo' => $status === 'ativo' ? 1 : 0, 'tagUid' => $tagUid];
+        return ['nome' => $nome, 'matricula' => $matricula, 'email' => $email, 'curso' => $curso, 'ativo' => $status === 'ativo' ? 1 : 0, 'tagUid' => $tagUid, 'senha' => $senha];
     }
 
     private function existe(string $coluna, string $valor, ?int $ignorarId): bool

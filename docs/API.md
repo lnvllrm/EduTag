@@ -10,14 +10,16 @@ demonstrar o front sem banco (`USE_MOCK: true` em `config.js`).
 - Base: `CONFIG.API_BASE` (`frontend/assets/js/config.js`) = `../backend/api/` → `http://localhost/EduTag/backend/api/`.
 - Formato: JSON UTF-8. Datas `YYYY-MM-DD`, data/hora `YYYY-MM-DDTHH:MM:SS` (horário local do servidor), horas `HH:MM`.
 - Autenticação: **sessão PHP por cookie** (`credentials: same-origin`). Sem sessão → `401`.
-- Perfis: `professor` (visão total do sistema, inclusive cadastros) e `aluno` (somente os próprios dados). `auth/me` devolve `perfil` e, para aluno, `alunoId`.
+- Perfis: `administrador` (gestão total: todos os cadastros e dispositivos), `professor` (consulta apenas o que é das turmas dele) e `aluno` (somente os próprios dados). `auth/me` devolve `perfil` (= `tipo` do banco) e, para aluno, `alunoId`.
 - Autorização é **sempre do back-end** (o menu do front só esconde itens). Para o perfil **aluno**:
   - `presencas`, `aulas`, `turmas`, `alunos/{id}` e `alunos/{id}/frequencia` retornam **apenas** o que pertence a ele (ignorar `alunoId` enviado na query; `403` se pedir outro aluno);
   - `aulas` devolve `presenca: { status, registradoEm, dispositivo } | null` (a dele) **no lugar de** `resumo` (a chamada da turma);
   - todo o restante (cadastros, `dashboard`, `relatorios`, `dispositivos`, `leituras`, `turmas/{id}/alunos`) → `403`.
 - Roteamento: caminhos REST (`alunos/12`), via `backend/api/.htaccess` (`mod_rewrite`) → `index.php`. Sem Apache: `php -S localhost:8080 backend/dev-router.php`.
 - Sessão: cookie `edutag_sid` (HttpOnly, SameSite=Lax). Requisições que alteram dados com cabeçalho `Origin` de outra origem recebem `403 forbidden_origin` (CSRF). Corpo sempre `application/json`.
-- Perfil: `administrador` e `professor` (banco) chegam como `perfil: "professor"`. O login (`email`) também aceita a matrícula (RA).
+- O login (`email`) também aceita a matrícula (RA). Em `POST/PUT alunos` e `professores`, `senha` é opcional (mín. 8): vazia no cadastro → a matrícula vira senha provisória; vazia na edição → mantém a atual.
+- `POST aulas` aceita `repetir: "semanal"`: cria também as aulas das semanas seguintes (mesmo dia/horário, status `agendada`) até o fim do semestre (período da turma `AAAA.1`/`AAAA.2`; datas em `config.php → termo`). A resposta traz `aulasCriadas`.
+- Ciclo da aula automático: a cada requisição, aulas `agendada` cujo início passou viram `em_andamento` e as que terminaram viram `realizada` (com `falta` automática).
 
 ### Sucesso
 ```json
@@ -45,7 +47,7 @@ demonstrar o front sem banco (`USE_MOCK: true` em `config.js`).
 | Método | Caminho | Descrição | Filtros / corpo |
 |---|---|---|---|
 | POST | `auth/login` | `{ email, senha }` → `{ usuario }` | — |
-| GET | `auth/me` | Usuário da sessão `{ id, nome, email, matricula, tipo, perfil: "professor" ou "aluno", alunoId?, senhaProvisoria }` | — |
+| GET | `auth/me` | Usuário da sessão `{ id, nome, email, matricula, tipo, perfil: "administrador", "professor" ou "aluno", alunoId?, senhaProvisoria }` | — |
 | POST | `auth/logout` | Encerra a sessão | — |
 | PUT | `auth/senha` | Troca a própria senha `{ senhaAtual, novaSenha }` (mín. 8) | Ainda sem tela no front |
 | GET/POST | `alunos` | Lista / cadastra | `status`, `tag` (`com`\|`sem`), `turmaId`. Corpo: `nome, matricula, email, curso, status, tagUid` |
@@ -66,16 +68,16 @@ demonstrar o front sem banco (`USE_MOCK: true` em `config.js`).
 | POST | `rfid/leitura` | **Arduino**: `{ uid }` (token do dispositivo, ver abaixo) | — |
 | POST | `rfid/heartbeat` | **Arduino**: `{ firmware? }` avisa que está online | — |
 | GET | `relatorios/frequencia` | Linhas por aluno×turma + `meta.{resumo,porTurma}` | `turmaId`, `disciplinaId`, `de`, `ate` |
-| GET | `dashboard` | **Professor**: `kpis, presencaPorDia, frequenciaTurmas, alunosAtencao, proximasAulas, ultimaAula (chamada: ausentes/atrasados), leiturasRecentes`. O painel do aluno é montado no front com `alunos/{id}/frequencia` + `aulas` | — |
+| GET | `dashboard` | **Administrador/professor** (professor: só as turmas dele, sem dados de dispositivos): `kpis, presencaPorDia, frequenciaTurmas, alunosAtencao, proximasAulas, ultimaAula (chamada: ausentes), leiturasRecentes`. O painel do aluno é montado no front com `alunos/{id}/frequencia` + `aulas` | — |
 
 Os formatos exatos de cada resposta podem ser vistos em `frontend/assets/js/mock/server.js` (funções `*View`).
 
 ### Regras implementadas no back-end
 - Unicidade de matrícula (`ra`), e-mail, UID de tag e códigos (`422` por campo); integridade referencial (`409`). Excluir aluno com registros, aula com presenças reais, disciplina com turmas ou turma com aulas retorna `409`.
-- Frequência: comparecimento = `presente` + `atrasado`; `justificado` não entra no denominador. Situação: ≥ 85% `regular`, ≥ 75% `atencao`, abaixo `risco` (**confirmar a regra institucional**; configurável em `config.php`). Os objetos de frequência incluem `justificadas`; os resumos de chamada, `justificados`.
+- Frequência: comparecimento = `presente`; `justificado` não entra no denominador. Situação: ≥ 85% `regular`, ≥ 75% `atencao`, abaixo `risco` (**confirmar a regra institucional**; configurável em `config.php`). Os objetos de frequência incluem `justificadas`; os resumos de chamada, `justificados`.
 - Status novos além do mock: aula `em_andamento`; presença `justificado`.
 - Finalizar uma aula (`realizada`) lança `falta` (origem `sistema`) para os matriculados sem leitura; reabrir desfaz.
-- Autorização por perfil. O professor enxerga todas as turmas (visão total); restringir por turma do professor é uma decisão futura.
+- Autorização por perfil. Cadastros e dispositivos: só `administrador`. `professor`: leitura de turmas, aulas, presenças, relatórios, dashboard e alunos **das turmas dele** (`403` fora disso). `GET disciplinas` é liberado à equipe (filtros).
 
 ## Integração RFID (Arduino)
 Autenticação **por token do dispositivo**, não por sessão: `Authorization: Bearer <token>`. O token é gerado por `php backend/bin/dispositivo.php` e só o hash SHA-256 fica no banco.
@@ -94,7 +96,7 @@ HTTP `200` sempre que a leitura foi processada; `data.resultado` é um de:
 
 | resultado | Significado |
 |---|---|
-| `registrada` | Presença gravada (`status` = `presente` ou `atrasado`) |
+| `registrada` | Presença gravada (`status` = `presente`) |
 | `duplicada` | O aluno já tem registro nessa aula |
 | `fora_de_horario` | Tag válida, mas sem aula de hoje na janela [início − 15 min, fim] |
 | `tag_desconhecida` | Tag não vinculada a um aluno ativo |

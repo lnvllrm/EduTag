@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace EduTag;
 
 use EduTag\Controllers\{AlunoController, AulaController, AuthController, DashboardController, DisciplinaController, DispositivoController,
-    PresencaController, RelatorioController, RfidController, TurmaController};
+    PresencaController, ProfessorController, RelatorioController, RfidController, TurmaController};
 use EduTag\Core\{ApiException, Config, Request, Response, Router};
 use Throwable;
 
@@ -23,6 +23,7 @@ final class App
                 return;
             }
             self::verificarOrigem($request);
+            Services\AulaService::sincronizar(); // em andamento / finalizada (+ faltas) pelo relógio
             $response = self::routes()->dispatch($request);
         } catch (ApiException $e) {
             $response = Response::error($e->status, $e->errorCode, $e->getMessage(), $e->fields);
@@ -46,7 +47,7 @@ final class App
         $r->add('PUT', 'auth/senha', [AuthController::class, 'alterarSenha'], $all);
 
         // Alunos
-        $r->add('GET', 'alunos', [AlunoController::class, 'listar']);
+        $r->add('GET', 'alunos', [AlunoController::class, 'listar'], Router::STAFF);
         $r->add('POST', 'alunos', [AlunoController::class, 'criar']);
         $r->add('GET', 'alunos/{id}', [AlunoController::class, 'mostrar'], $all);
         $r->add('PUT', 'alunos/{id}', [AlunoController::class, 'atualizar']);
@@ -54,19 +55,24 @@ final class App
         $r->add('GET', 'alunos/{id}/frequencia', [AlunoController::class, 'frequencia'], $all);
 
         // Disciplinas
-        $r->add('GET', 'disciplinas', [DisciplinaController::class, 'listar']);
+        $r->add('GET', 'disciplinas', [DisciplinaController::class, 'listar'], Router::STAFF); // filtros de professor
         $r->add('POST', 'disciplinas', [DisciplinaController::class, 'criar']);
         $r->add('PUT', 'disciplinas/{id}', [DisciplinaController::class, 'atualizar']);
         $r->add('DELETE', 'disciplinas/{id}', [DisciplinaController::class, 'excluir']);
 
         // Turmas
-        $r->add('GET', 'professores', [TurmaController::class, 'professores']);
         $r->add('GET', 'turmas', [TurmaController::class, 'listar'], $all);
         $r->add('POST', 'turmas', [TurmaController::class, 'criar']);
         $r->add('PUT', 'turmas/{id}', [TurmaController::class, 'atualizar']);
         $r->add('DELETE', 'turmas/{id}', [TurmaController::class, 'excluir']);
-        $r->add('GET', 'turmas/{id}/alunos', [TurmaController::class, 'alunos']);
+        $r->add('GET', 'turmas/{id}/alunos', [TurmaController::class, 'alunos'], Router::STAFF);
         $r->add('PUT', 'turmas/{id}/alunos', [TurmaController::class, 'definirAlunos']);
+
+        // Professores (e administradores, somente consulta)
+        $r->add('GET', 'professores', [ProfessorController::class, 'listar']);
+        $r->add('POST', 'professores', [ProfessorController::class, 'criar']);
+        $r->add('PUT', 'professores/{id}', [ProfessorController::class, 'atualizar']);
+        $r->add('DELETE', 'professores/{id}', [ProfessorController::class, 'excluir']);
 
         // Aulas
         $r->add('GET', 'aulas', [AulaController::class, 'listar'], $all);
@@ -76,8 +82,8 @@ final class App
 
         // Presenças (somente leitura), relatórios e painel
         $r->add('GET', 'presencas', [PresencaController::class, 'listar'], $all);
-        $r->add('GET', 'relatorios/frequencia', [RelatorioController::class, 'frequencia']);
-        $r->add('GET', 'dashboard', [DashboardController::class, 'resumo']);
+        $r->add('GET', 'relatorios/frequencia', [RelatorioController::class, 'frequencia'], Router::STAFF);
+        $r->add('GET', 'dashboard', [DashboardController::class, 'resumo'], Router::STAFF);
 
         // Dispositivos e leituras (consulta)
         $r->add('GET', 'dispositivos', [DispositivoController::class, 'listar']);

@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS registro (
     aula_id             INT NOT NULL,
     usuario_id          INT NOT NULL,
     data_hora_leitura   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    status              ENUM('presente', 'atrasado', 'ausente', 'justificado') NOT NULL DEFAULT 'presente',
+    status              ENUM('presente', 'ausente', 'justificado') NOT NULL DEFAULT 'presente',
     dispositivo_id      INT NULL,
     origem              ENUM('rfid', 'manual', 'sistema') NOT NULL DEFAULT 'rfid', -- [EDUTAG]
 

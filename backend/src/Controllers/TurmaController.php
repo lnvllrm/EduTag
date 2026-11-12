@@ -5,6 +5,7 @@ namespace EduTag\Controllers;
 
 use EduTag\Core\ApiException;
 use EduTag\Core\Database;
+use EduTag\Core\Escopo;
 use EduTag\Core\Fmt;
 use EduTag\Core\Paginator;
 use EduTag\Core\Request;
@@ -28,6 +29,9 @@ final class TurmaController
             $where[] = 'EXISTS (SELECT 1 FROM matricula ms WHERE ms.turma_id = t.id AND ms.usuario_id = :f_uid)';
             $params['f_uid'] = $user['id'];
         }
+        [$escW, $escP] = Escopo::turma($user);
+        $where = array_merge($where, $escW);
+        $params += $escP;
         if (($d = $req->queryInt('disciplinaId')) !== null) {
             $where[] = 't.disciplina_id = :f_disc';
             $params['f_disc'] = $d;
@@ -90,9 +94,10 @@ final class TurmaController
     }
 
     /** GET turmas/{id}/alunos */
-    public function alunos(Request $req, array $p): Response
+    public function alunos(Request $req, array $p, array $user): Response
     {
         $this->buscar($p['id']);
+        Escopo::exigirTurma($user, $p['id']);
         $rows = Database::all(
             "SELECT u.id, u.nome, u.ra AS matricula, u.email, u.curso, u.ativo, u.tag_uid, u.tag_vinculada_em,
                     (SELECT COUNT(*) FROM matricula m2 WHERE m2.usuario_id = u.id) AS total_turmas
@@ -133,13 +138,6 @@ final class TurmaController
             }
         });
         return Response::ok(['total' => count($ids)]);
-    }
-
-    /** GET professores → [{ id, nome }] para os selects. */
-    public function professores(): Response
-    {
-        $rows = Database::all("SELECT id, nome FROM usuario WHERE tipo IN ('professor', 'administrador') AND ativo = 1 ORDER BY nome, id");
-        return Response::ok(array_map(static fn ($r) => ['id' => (int) $r['id'], 'nome' => $r['nome']], $rows));
     }
 
     public static function view(array $r): array

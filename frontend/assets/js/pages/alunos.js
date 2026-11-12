@@ -7,13 +7,16 @@ import { initials } from '../utils.js';
 import { ALUNO_FIELDS, alunoFormIntro } from '../schemas/aluno.schema.js';
 import { optTurmas } from '../schemas/options.js';
 
-const { content, actions, allowed } = await initPage({
-  page: 'alunos', title: 'Alunos', subtitle: 'Cadastro de alunos e associação das tags RFID.',
+const { user, content, actions, allowed } = await initPage({
+  page: 'alunos', title: 'Alunos',
+  subtitle: (u) => (u.perfil === 'administrador' ? 'Cadastro de alunos e associação das tags RFID.' : 'Alunos matriculados nas suas turmas.'),
 });
 
 if (allowed) {
+  const isAdmin = user.perfil === 'administrador'; // só o administrador cadastra; o professor consulta
   createCrudPage({
     mount: content, actions, resource: Alunos, singular: 'aluno', plural: 'alunos', gender: 'm',
+    canCreate: isAdmin, canEdit: isAdmin, canDelete: isAdmin,
     search: 'Nome, matrícula, e-mail ou UID da tag',
     defaultSort: { key: 'nome', order: 'asc' },
     filters: [

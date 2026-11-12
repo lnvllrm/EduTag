@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace EduTag\Services;
 
+use EduTag\Core\Escopo;
 use EduTag\Core\Fmt;
 use EduTag\Core\Request;
 use EduTag\Core\Validator;
@@ -36,6 +37,9 @@ final class Presencas
         $where = [];
         $params = [];
 
+        [$escW, $escP] = Escopo::turma($user);
+        $where = array_merge($where, $escW);
+        $params += $escP;
         if ($user['perfil'] === 'aluno') {
             $where[] = 'r.usuario_id = :f_uid';
             $params['f_uid'] = $user['id'];
